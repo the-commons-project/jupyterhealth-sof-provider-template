@@ -93,3 +93,15 @@ def test_docs_present_with_key_sections(cookies):
     assert "security review" in epic.lower()
     assert "frame-ancestors" in deploy
     assert "MRN_IDENTIFIER_SYSTEM" in deploy
+
+
+def test_baked_project_smoke_runs(cookies):
+    import subprocess
+    import sys
+    result = cookies.bake(extra_context={"project_slug": "demo_app"})
+    assert result.exit_code == 0
+    proc = subprocess.run(
+        [sys.executable, "-m", "pytest", "tests/test_smoke.py", "-q"],
+        cwd=str(result.project_path), capture_output=True, text=True,
+    )
+    assert proc.returncode == 0, proc.stdout + proc.stderr
