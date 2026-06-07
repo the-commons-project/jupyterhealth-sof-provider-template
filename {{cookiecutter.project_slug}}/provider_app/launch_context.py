@@ -10,7 +10,7 @@ import json
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 
 import requests
 
@@ -56,12 +56,17 @@ def _extract_mrn(patient_resource: dict[str, Any], mrn_system: str) -> str:
     )
 
 
-def current(http_get: Callable[..., Any] = requests.get) -> LaunchContext:
+def current(http_get: Optional[Callable[..., Any]] = None) -> LaunchContext:
     """Return the LaunchContext for the active SMART session.
 
     Raises LaunchContextError if the token is missing/incomplete or the MRN
     cannot be resolved from the EHR Patient resource.
+
+    `http_get` is resolved at call time (defaulting to `requests.get`) so callers
+    and tests can substitute it via injection or by patching `requests.get`.
     """
+    if http_get is None:
+        http_get = requests.get
     data = _read_token()
     token = data.get("token") or {}
     access_token = token.get("access_token")

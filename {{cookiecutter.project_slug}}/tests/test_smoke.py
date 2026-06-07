@@ -30,17 +30,17 @@ def test_notebook_code_executes(tmp_path, monkeypatch):
     monkeypatch.setenv("SMART_TOKEN_FILE", str(token_file))
     monkeypatch.setenv("MRN_IDENTIFIER_SYSTEM", "urn:mrn")
 
-    # Fake EHR Patient fetch (MRN extraction).
-    # launch_context.current() uses `http_get=requests.get` as a default arg
-    # bound at definition time, so we patch the whole `current` function to
-    # return a fake LaunchContext directly — simpler and process-safe.
-    fake_ctx = launch_context.LaunchContext(
-        access_token="TEST",
-        fhir_base="https://fhir.test",
-        fhir_patient_id="P1",
-        patient_mrn="MRN-1",
-    )
-    monkeypatch.setattr(launch_context, "current", lambda: fake_ctx)
+    # Fake the EHR Patient fetch so the REAL launch_context.current() runs
+    # (token read + MRN extraction). current() resolves requests.get at call
+    # time, so patching it here takes effect.
+    class _Resp:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"id": "P1", "identifier": [{"system": "urn:mrn", "value": "MRN-1"}]}
+
+    monkeypatch.setattr(launch_context.requests, "get", lambda url, headers=None: _Resp())
 
     # Fake JHE data
     def _fake_fetch(mrn, types, client=None, start=None, end=None):
