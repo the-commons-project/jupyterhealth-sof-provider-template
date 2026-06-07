@@ -80,3 +80,16 @@ def test_env_example_lists_required_vars(cookies):
     for var in ["JHE_URL", "JHE_TOKEN", "MRN_IDENTIFIER_SYSTEM"]:
         assert var in env
     assert "https://jhe.test" in env
+
+
+def test_docs_present_with_key_sections(cookies):
+    result = cookies.bake(extra_context={
+        "project_slug": "demo_app",
+        "smart_scopes": "openid fhirUser launch patient/*.read",
+    })
+    epic = (result.project_path / "docs" / "epic-registration.md").read_text()
+    deploy = (result.project_path / "docs" / "deployment.md").read_text()
+    assert "patient/*.read" in epic
+    assert "security review" in epic.lower()
+    assert "frame-ancestors" in deploy
+    assert "MRN_IDENTIFIER_SYSTEM" in deploy
