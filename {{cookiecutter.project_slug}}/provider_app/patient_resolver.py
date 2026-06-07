@@ -33,5 +33,5 @@ def _default_resolver(mrn: str, client: Any) -> int:
 
 def resolve_patient(mrn: str, client: Any) -> int:
     """Return the JHE patient id for the given MRN."""
-    resolver = _override or _default_resolver
+    resolver = _override if _override is not None else _default_resolver
     return resolver(mrn, client)
