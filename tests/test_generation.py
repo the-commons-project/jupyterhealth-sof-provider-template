@@ -95,6 +95,18 @@ def test_docs_present_with_key_sections(cookies):
     assert "MRN_IDENTIFIER_SYSTEM" in deploy
 
 
+def test_quickstart_walks_user_through(cookies):
+    result = cookies.bake(extra_context={"project_slug": "demo_app"})
+    quickstart = (result.project_path / "docs" / "QUICKSTART.md").read_text()
+    # the end-to-end journey is covered
+    assert "Prerequisites" in quickstart
+    assert "JHE_TOKEN" in quickstart
+    assert "Admin SPA" in quickstart  # how to get a JHE token
+    assert "smart-on-fhir/launch" in quickstart  # how to simulate a launch
+    assert "MedPlum" in quickstart
+    assert "Troubleshooting" in quickstart
+
+
 def test_baked_project_smoke_runs(cookies):
     import subprocess
     import sys

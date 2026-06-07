@@ -20,6 +20,7 @@ default data types.
 - `provider_app/` — launch context, MRN→JHE resolution, and data fetch (don't need to touch).
 - `jupyter_server_config.py` — SMART + Voilà + CSP, pre-filled from your answers.
 - `Dockerfile`, `docker-compose.yml`, `fly.toml.example` — deploy.
+- `docs/QUICKSTART.md` — end-to-end walkthrough (get a JHE token, simulate a launch, see data).
 - `docs/epic-registration.md`, `docs/deployment.md` — register and ship it.
 
 ## Develop

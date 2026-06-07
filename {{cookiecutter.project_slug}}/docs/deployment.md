@@ -1,9 +1,15 @@
 # Deploying this app
 
+> **New here?** Start with [QUICKSTART.md](QUICKSTART.md) — it walks the full path from a
+> generated project to data on screen (how to get a `JHE_TOKEN`, how to simulate a SMART
+> launch). This file is the deployment-specific reference.
+
 ## Configure
 Copy `.env.example` to `.env` and set:
-- `JHE_URL` — your JupyterHealth Exchange base URL
-- `JHE_TOKEN` — a JHE API token authorized to read your patients
+- `JHE_URL` — your JupyterHealth Exchange base URL (e.g. `https://jhe.fly.dev`)
+- `JHE_TOKEN` — a JHE bearer token authorized to read your patients. Obtain it by
+  registering this app as an **OAuth2 Client in the JHE Admin SPA** (your JHE instance's
+  `/portal`) and completing JHE's OAuth flow — see [QUICKSTART.md](QUICKSTART.md) §1.
 - `MRN_IDENTIFIER_SYSTEM` — the Epic `Patient.identifier` system that holds the MRN
 - `JHE_DATA_TYPE_CODES` (optional) — JSON to override the data-type → OMH code map.
   **Note:** the `steps` code default (`omh:step-count:3.0`) is provisional; set it to

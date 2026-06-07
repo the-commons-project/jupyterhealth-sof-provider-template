@@ -6,6 +6,8 @@ the launched patient to a JupyterHealth Exchange record by MRN, fetches their de
 data, and renders it via a Voilà-served Jupyter notebook.
 
 ## Where to start
+- **`docs/QUICKSTART.md`** — **start here.** End-to-end: get a JHE token, configure,
+  simulate a SMART launch (MedPlum or fully local), and see data on screen.
 - **`dashboard.ipynb`** — edit the cell marked `ADD YOUR ANALYTICS + VISUALIZATION`
   to add your own analytics/visualization. The cells above it (launch context + data
   fetch) are scaffolded; you normally don't touch them.
