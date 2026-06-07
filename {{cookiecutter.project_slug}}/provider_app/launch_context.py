@@ -65,7 +65,7 @@ def current(http_get: Callable[..., Any] = requests.get) -> LaunchContext:
     data = _read_token()
     token = data.get("token") or {}
     access_token = token.get("access_token")
-    fhir_patient_id = token.get("patient")
+    fhir_patient_id = token.get("patient")  # SMART token 'patient' field is the EHR patient resource ID
     fhir_base = data.get("fhir_url")
     if not access_token or not fhir_patient_id or not fhir_base:
         raise LaunchContextError(
@@ -77,9 +77,14 @@ def current(http_get: Callable[..., Any] = requests.get) -> LaunchContext:
         raise LaunchContextError("MRN_IDENTIFIER_SYSTEM environment variable is not set.")
 
     url = f"{fhir_base.rstrip('/')}/Patient/{fhir_patient_id}"
-    response = http_get(url, headers={"Authorization": f"Bearer {access_token}"})
-    response.raise_for_status()
-    patient_resource = response.json()
+    try:
+        response = http_get(url, headers={"Authorization": f"Bearer {access_token}"})
+        response.raise_for_status()
+        patient_resource = response.json()
+    except requests.RequestException as e:
+        raise LaunchContextError(
+            f"Failed to fetch Patient/{fhir_patient_id} from the EHR FHIR server: {e}"
+        ) from e
 
     return LaunchContext(
         access_token=access_token,
