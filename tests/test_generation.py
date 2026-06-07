@@ -45,3 +45,14 @@ def test_voila_json_present_and_valid(cookies):
     assert voila.is_file()
     data = _json.loads(voila.read_text())
     assert data["VoilaConfiguration"]["file_whitelist"] == ["dashboard.ipynb"]
+
+
+def test_dashboard_notebook_structure(cookies):
+    import nbformat
+    result = cookies.bake(extra_context={"project_slug": "demo_app"})
+    nb_path = result.project_path / "dashboard.ipynb"
+    nb = nbformat.read(str(nb_path), as_version=4)
+    source = "\n".join(cell["source"] for cell in nb.cells)
+    assert "from provider_app import launch_context, jhe_data" in source
+    assert "ADD YOUR ANALYTICS" in source
+    assert "jhe_data.fetch" in source
