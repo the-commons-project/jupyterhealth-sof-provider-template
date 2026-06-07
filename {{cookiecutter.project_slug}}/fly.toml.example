@@ -1,0 +1,16 @@
+# Example fly.io deploy config. Copy to fly.toml and adjust.
+app = "{{ cookiecutter.project_slug }}"
+primary_region = "sjc"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[http_service]
+  internal_port = 8888
+  force_https = true
+  auto_stop_machines = true
+  min_machines_running = 1
+
+[[vm]]
+  memory = "1gb"
+  cpus = 1

@@ -1,3 +1,6 @@
+import tomllib
+
+
 def test_bake_generates_project(cookies):
     result = cookies.bake(extra_context={"project_slug": "demo_app"})
     assert result.exit_code == 0
@@ -56,3 +59,24 @@ def test_dashboard_notebook_structure(cookies):
     assert "from provider_app import launch_context, jhe_data" in source
     assert "ADD YOUR ANALYTICS" in source
     assert "jhe_data.fetch" in source
+
+
+def test_generated_pyproject_pins_deps(cookies):
+    import tomllib
+    result = cookies.bake(extra_context={"project_slug": "demo_app"})
+    pyproject = (result.project_path / "pyproject.toml").read_text()
+    data = tomllib.loads(pyproject)
+    deps = data["project"]["dependencies"]
+    assert any(d.startswith("jupyter-smart-on-fhir==0.1.0a3") for d in deps)
+    assert any(d.startswith("jupyterhealth-client>=0.2.0") for d in deps)
+    assert any(d.startswith("voila") for d in deps)
+
+
+def test_env_example_lists_required_vars(cookies):
+    result = cookies.bake(extra_context={
+        "project_slug": "demo_app", "jhe_base_url": "https://jhe.test"
+    })
+    env = (result.project_path / ".env.example").read_text()
+    for var in ["JHE_URL", "JHE_TOKEN", "MRN_IDENTIFIER_SYSTEM"]:
+        assert var in env
+    assert "https://jhe.test" in env
