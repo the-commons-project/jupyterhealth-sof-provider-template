@@ -54,7 +54,10 @@ def _filter_dates(df: pd.DataFrame, start: Optional[str], end: Optional[str]) ->
     if start is not None:
         df = df[df[_TIME_COLUMN] >= pd.Timestamp(start, tz="UTC")]
     if end is not None:
-        df = df[df[_TIME_COLUMN] <= pd.Timestamp(end, tz="UTC")]
+        # `end` is an inclusive calendar date: keep all observations up to the
+        # end of that day (otherwise intraday readings on `end` would be dropped).
+        end_exclusive = pd.Timestamp(end, tz="UTC") + pd.Timedelta(days=1)
+        df = df[df[_TIME_COLUMN] < end_exclusive]
     return df
 
 

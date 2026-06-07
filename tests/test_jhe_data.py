@@ -42,6 +42,25 @@ def test_fetch_filters_by_date_range():
     assert len(result["heart_rate"]) == 1  # only the 2026-06-05 row
 
 
+def test_fetch_end_date_includes_intraday_observations():
+    # `end` is an inclusive calendar date: a non-midnight reading on the end day is kept.
+    class IntradayClient(FakeClient):
+        def list_observations_df(self, patient_id=None, code=None, limit=2000):
+            return pd.DataFrame({
+                "effective_time_frame_date_time": pd.to_datetime(
+                    ["2026-06-10T10:30:00Z", "2026-06-11T00:00:00Z"], utc=True
+                ),
+                "heart_rate_value": [80, 90],
+            })
+
+    result = jhe_data.fetch(
+        "MRN-1", types=["heart_rate"], client=IntradayClient(),
+        start="2026-06-01", end="2026-06-10",
+    )
+    # the 2026-06-10 10:30 reading is kept; the 2026-06-11 reading is excluded
+    assert len(result["heart_rate"]) == 1
+
+
 def test_data_type_codes_env_override(monkeypatch):
     monkeypatch.setenv("JHE_DATA_TYPE_CODES", json.dumps({"steps": "omh:step-count:9.9"}))
     assert jhe_data.code_for("steps") == "omh:step-count:9.9"
