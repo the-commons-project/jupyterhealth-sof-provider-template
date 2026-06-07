@@ -1,0 +1,11 @@
+{
+    "project_name": "My SoF Provider App",
+    "project_slug": "{{ cookiecutter.project_name.lower().replace(' ', '_').replace('-', '_') }}",
+    "client_id": "my-sof-app",
+    "jhe_base_url": "https://jhe.example.org",
+    "epic_fhir_base": "https://fhir.epic.com/interconnect-fhir-oauth/api/FHIR/R4",
+    "smart_scopes": "openid fhirUser launch patient/*.read",
+    "epic_iframe_origin": "https://epic.example.org",
+    "mrn_identifier_system": "urn:oid:1.2.840.114350.1.13.0.1.7.5.737384.0",
+    "data_types": "heart_rate, sleep, steps"
+}
