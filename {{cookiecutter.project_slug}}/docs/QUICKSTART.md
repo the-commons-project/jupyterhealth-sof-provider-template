@@ -24,33 +24,32 @@ There are two test paths for the SMART launch:
 - The patient's **MRN** must be stored on the JHE patient as its **external identifier**,
   and must match the MRN the EHR exposes on `Patient.identifier`. This is the join key.
 
-> **Two credentials, don't confuse them.** The SMART launch gives you an *EHR* access
-> token (used only to read the EHR `Patient` resource for the MRN). Reading device data
-> from JHE uses a *separate* `JHE_TOKEN`. Unifying these via token exchange is a future
-> improvement (tracked upstream in `jhe-smart-demo`).
+> **How the app reaches JHE.** The SMART launch gives the app an *EHR* access token. By
+> default the app exchanges that token for a JHE token (RFC 8693, JHE's `/o/token-exchange`),
+> so the provider does **not** sign into JHE separately. For that to work JHE must be
+> configured to trust the EHR issuer (`TRUSTED_TOKEN_IDP`) and have the launching
+> Practitioner on file. As a dev/test shortcut you can instead set a static `JHE_TOKEN`
+> (see step 1), which bypasses the exchange.
 
 ---
 
-## 1. Get your JHE base URL and a `JHE_TOKEN`
+## 1. Get your JHE base URL (token exchange needs no `JHE_TOKEN`)
 
-`jupyterhealth-client` (used inside the notebook) authenticates to JHE with a bearer
-token. You get one by registering this app as an **OAuth2 Client** in the **JHE Admin
-SPA**, then completing JHE's OAuth flow.
+Note your JHE base URL — that's your `JHE_URL` (e.g. `https://jhe.fly.dev`). With token
+exchange (the default), the app mints its JHE token from the SMART launch, so there is no
+`JHE_TOKEN` to create. Two things must be true on the JHE instance for the exchange to
+succeed (coordinate with whoever runs it):
 
-1. Open your JHE instance's Admin SPA — the `/portal` path on your JHE host, e.g.
-   `https://jhe.fly.dev/portal` (or `http://localhost:8000/` for a local JHE). Log in as
-   a **Practitioner** with access to your Study.
-2. Register a **Client** for this app under your Study (JHE → your instance's client
-   management). JHE issues an **OAuth 2.0 Client ID** for it. (JHE uses the Authorization
-   Code grant with PKCE — see the
-   [JHE README → Authorization](https://github.com/jupyterhealth/jupyterhealth-exchange#readme).)
-3. Complete the OAuth flow to obtain an **access token**. For a quick start, the simplest
-   path is to use the practitioner web-login token from your JHE instance. That access
-   token is your `JHE_TOKEN`.
-4. Note your JHE base URL — that's your `JHE_URL` (e.g. `https://jhe.fly.dev`).
+- `TRUSTED_TOKEN_IDP` is set to the EHR's issuer so JHE trusts the launch token. If your
+  EHR's OIDC issuer differs from its FHIR base, set `JHE_TRUSTED_ISS` in `.env` to match.
+- The launching **Practitioner** exists in JHE keyed by the issuer's identifier, and the
+  patient you'll view is enrolled with the MRN as their external id.
 
-> Registering your deployed app's host (e.g. your `*.fly.dev` URL) as a Client/redirect in
-> the JHE Admin SPA is required before it can obtain tokens in production, too.
+**Dev/test shortcut — a static `JHE_TOKEN`.** To skip the exchange, register this app as an
+**OAuth2 Client** in the **JHE Admin SPA** (the `/portal` path on your JHE host, e.g.
+`https://jhe.fly.dev/portal`), complete JHE's Authorization-Code-with-PKCE flow, and use the
+resulting practitioner access token as `JHE_TOKEN`. When `JHE_TOKEN` is set the app uses it
+and skips token exchange.
 
 ---
 
@@ -61,7 +60,7 @@ cp .env.example .env
 ```
 Set in `.env`:
 - `JHE_URL` — from step 1 (e.g. `https://jhe.fly.dev`)
-- `JHE_TOKEN` — from step 1
+- `JHE_TOKEN` — leave blank to use token exchange; set it only for the dev/test shortcut
 - `MRN_IDENTIFIER_SYSTEM` — the EHR `Patient.identifier` system that holds the MRN
   (see [epic-registration.md](epic-registration.md) §3 for how to find it; MedPlum has
   its own identifier system)
@@ -145,5 +144,6 @@ pytest tests/test_smoke.py
 | `LaunchContextError: No identifier with system ... found` | `MRN_IDENTIFIER_SYSTEM` doesn't match the EHR's MRN system | Inspect the EHR `Patient.identifier` and set the correct system |
 | `PatientNotInJHE: No JupyterHealth patient found for MRN ...` | JHE has no patient whose external id == that MRN | Add/align the patient's external identifier in JHE |
 | `LaunchContextError: Failed to fetch Patient/...` | EHR token/scope issue or wrong FHIR base | Check the SMART scopes include `patient/*.read` and the EHR FHIR base |
+| `TokenExchangeError` / "trusted issuer" / "Practitioner not found" | JHE doesn't trust the EHR issuer, or the Practitioner isn't on file | Set the issuer JHE expects via `JHE_TRUSTED_ISS`; confirm JHE's `TRUSTED_TOKEN_IDP` and that the Practitioner exists in JHE |
 | JHE calls return 401 | `JHE_TOKEN` missing/expired, or app not registered as a JHE Client | Re-issue the token (step 1); confirm the Client is registered in the JHE Admin SPA |
 | "No <type> data for this patient" | No observations of that type in JHE for the patient | Confirm data exists; check `JHE_DATA_TYPE_CODES` (esp. the provisional `steps` code) |
