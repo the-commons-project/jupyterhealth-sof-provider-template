@@ -4,21 +4,32 @@ from provider_app import patient_resolver
 
 class FakeClient:
     def __init__(self, patients):
-        self._patients = patients  # {external_id: {"id": int, "identifier": str}}
+        self._patients = patients  # list of JHE patient records
 
-    def lookup_patient(self, *, email=None, external_id=None):
-        if external_id in self._patients:
-            return self._patients[external_id]
-        raise KeyError(f"No patient found with external identifier: {external_id!r}")
+    def list_patients(self, organization_id=None, study_id=None):
+        yield from self._patients
 
 
-def test_resolve_patient_returns_jhe_id():
-    client = FakeClient({"MRN-1": {"id": 42, "identifier": "MRN-1"}})
+def test_resolve_patient_matches_singular_identifier():
+    # older JHE schema: a singular `identifier` string
+    client = FakeClient([{"id": 42, "identifier": "MRN-1"}])
+    assert patient_resolver.resolve_patient("MRN-1", client=client) == 42
+
+
+def test_resolve_patient_matches_identifiers_array():
+    # current JHE schema: an `identifiers` array of {system, value}
+    client = FakeClient([
+        {"id": 7, "identifiers": [{"system": "other", "value": "X"}]},
+        {"id": 42, "identifiers": [
+            {"system": "https://openwearables.io/ns/patient-id", "value": "abc"},
+            {"system": "urn:oid:1.2.3.4", "value": "MRN-1"},
+        ]},
+    ])
     assert patient_resolver.resolve_patient("MRN-1", client=client) == 42
 
 
 def test_resolve_patient_not_found_raises_patientnotin_jhe():
-    client = FakeClient({})
+    client = FakeClient([{"id": 1, "identifiers": [{"system": "s", "value": "other"}]}])
     with pytest.raises(patient_resolver.PatientNotInJHE):
         patient_resolver.resolve_patient("MRN-MISSING", client=client)
 

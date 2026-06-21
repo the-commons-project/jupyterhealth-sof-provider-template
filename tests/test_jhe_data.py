@@ -8,8 +8,8 @@ class FakeClient:
     def __init__(self):
         self.calls = []
 
-    def lookup_patient(self, *, email=None, external_id=None):
-        return {"id": 7, "identifier": external_id}
+    def list_patients(self, organization_id=None, study_id=None):
+        yield {"id": 7, "identifier": "MRN-1"}
 
     def list_observations_df(self, patient_id=None, code=None, limit=2000):
         self.calls.append((patient_id, code))
