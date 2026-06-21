@@ -1,6 +1,6 @@
 """End-to-end smoke test: run dashboard.ipynb's code against fakes.
 
-Proves launch_context -> jhe_data.fetch -> notebook viz wire together without a
+Proves launch_context -> jhe_auth -> jhe_data.fetch -> notebook viz wire together without a
 real EHR or JHE. Executes the notebook's code cells in-process with fakes injected
 (a real kernel would not see in-process monkeypatches). Run from the project root:
 `pytest tests/test_smoke.py`.
@@ -29,6 +29,10 @@ def test_notebook_code_executes(tmp_path, monkeypatch):
     }))
     monkeypatch.setenv("SMART_TOKEN_FILE", str(token_file))
     monkeypatch.setenv("MRN_IDENTIFIER_SYSTEM", "urn:mrn")
+    # Static $JHE_TOKEN takes the dev/test shortcut in jhe_auth.client_for_launch,
+    # so the smoke test skips real token exchange.
+    monkeypatch.setenv("JHE_URL", "https://jhe.test")
+    monkeypatch.setenv("JHE_TOKEN", "TEST-JHE-TOKEN")
 
     # Fake the EHR Patient fetch so the REAL launch_context.current() runs
     # (token read + MRN extraction). current() resolves requests.get at call

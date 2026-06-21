@@ -56,7 +56,8 @@ def test_dashboard_notebook_structure(cookies):
     nb_path = result.project_path / "dashboard.ipynb"
     nb = nbformat.read(str(nb_path), as_version=4)
     source = "\n".join(cell["source"] for cell in nb.cells)
-    assert "from provider_app import launch_context, jhe_data" in source
+    assert "from provider_app import launch_context, jhe_auth, jhe_data" in source
+    assert "jhe_auth.client_for_launch" in source
     assert "ADD YOUR ANALYTICS" in source
     assert "jhe_data.fetch" in source
 
