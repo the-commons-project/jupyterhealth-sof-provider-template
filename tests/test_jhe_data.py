@@ -5,6 +5,12 @@ from provider_app import jhe_data
 
 
 class FakeClient:
+    """Returns a flattened observations frame WITH a code column, like the real client.
+
+    `fetch` now makes one unfiltered call and splits by code client-side, so the fake
+    returns all of a patient's rows (here, two heart-rate readings) tagged with their code.
+    """
+
     def __init__(self):
         self.calls = []
 
@@ -12,9 +18,10 @@ class FakeClient:
         yield {"id": 7, "identifier": "MRN-1"}
 
     def list_observations_df(self, patient_id=None, code=None, limit=2000):
-        self.calls.append((patient_id, code))
+        self.calls.append((patient_id, code, limit))
         return pd.DataFrame(
             {
+                "code_coding_0_code": ["omh:heart-rate:2.0", "omh:heart-rate:2.0"],
                 "effective_time_frame_date_time": pd.to_datetime(
                     ["2026-06-01T00:00:00Z", "2026-06-05T00:00:00Z"], utc=True
                 ),
@@ -29,8 +36,40 @@ def test_fetch_returns_dict_of_dataframes():
     assert set(result.keys()) == {"heart_rate"}
     assert isinstance(result["heart_rate"], pd.DataFrame)
     assert len(result["heart_rate"]) == 2
-    # patient resolved to id 7, queried with the heart-rate code
+    # patient resolved to id 7
     assert client.calls[0][0] == 7
+
+
+def test_fetch_uses_one_unfiltered_high_limit_call():
+    # Robustness contract: a single fetch with NO server-side code= filter (which drops
+    # IEEE codes) and a limit well above the API's 2000-row default (which truncates).
+    client = FakeClient()
+    jhe_data.fetch("MRN-1", types=["heart_rate"], client=client)
+    assert len(client.calls) == 1
+    patient_id, code, limit = client.calls[0]
+    assert code is None
+    assert limit >= 100_000
+
+
+def test_fetch_returns_ieee_coded_rows_server_filtering_would_drop():
+    # `sleep` defaults to an IEEE-namespaced code; server-side filtering returns nothing
+    # for it, so this proves the client-side split surfaces the row.
+    class MixedClient(FakeClient):
+        def list_observations_df(self, patient_id=None, code=None, limit=2000):
+            self.calls.append((patient_id, code, limit))
+            return pd.DataFrame(
+                {
+                    "code_coding_0_code": ["ieee:sleep-stage-summary:1.0", "omh:heart-rate:2.0"],
+                    "effective_time_frame_date_time": pd.to_datetime(
+                        ["2026-06-01T00:00:00Z", "2026-06-02T00:00:00Z"], utc=True
+                    ),
+                }
+            )
+
+    client = MixedClient()
+    result = jhe_data.fetch("MRN-1", types=["sleep"], client=client)
+    assert len(result["sleep"]) == 1            # the IEEE-coded sleep row, split client-side
+    assert client.calls[0][1] is None           # fetched unfiltered
 
 
 def test_fetch_filters_by_date_range():
@@ -46,7 +85,9 @@ def test_fetch_end_date_includes_intraday_observations():
     # `end` is an inclusive calendar date: a non-midnight reading on the end day is kept.
     class IntradayClient(FakeClient):
         def list_observations_df(self, patient_id=None, code=None, limit=2000):
+            self.calls.append((patient_id, code, limit))
             return pd.DataFrame({
+                "code_coding_0_code": ["omh:heart-rate:2.0", "omh:heart-rate:2.0"],
                 "effective_time_frame_date_time": pd.to_datetime(
                     ["2026-06-10T10:30:00Z", "2026-06-11T00:00:00Z"], utc=True
                 ),

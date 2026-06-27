@@ -12,13 +12,21 @@ patient, fetches that patient's data, and renders under Voilà.
 > you copy them from your template checkout, e.g.
 > `cp <template>/examples/cgm-dashboard.ipynb <your-project>/dashboard.ipynb`.
 
-## `cgm-dashboard.ipynb` — Continuous Glucose Monitoring (AGP report)
+## `cgm-dashboard.ipynb` — Continuous Glucose Monitoring (AGP report + multi-signal showcase)
 
 A single-patient CGM report: glycemic metrics (Mean, GMI, CV, Time-in-Range, GRI),
 an Ambulatory Glucose Profile (AGP) percentile chart, and a Time-in-Range bar. The
 analytics are adapted from the JupyterHealth
 [CGM tutorial](https://jupyterhealth.github.io/software-documentation/tutorial/tutorial-cgm/),
 rewired to run off the launch context instead of hardcoded ids.
+
+After the report, a **"what's possible" showcase** (separated by a divider) demonstrates a
+richer, interactive view built entirely in the notebook with Plotly + ipywidgets: the same
+patient's glucose overlaid with sleep, activity, and overnight vitals (HR/RR/SpO₂) in a
+tabbed dashboard (Master Overlay, an Anatomy-of-a-Day drill-down with a live normal-range
+slider, and Overnight small-multiples). It pulls those extra signals live from JHE, auto-
+scopes to the dense multi-signal window, and degrades gracefully — a glucose-only patient
+still gets the report, with the showcase quietly noting the absent signals.
 
 ### Use it in a generated project
 
@@ -27,7 +35,9 @@ rewired to run off the launch context instead of hardcoded ids.
    ```
    cp examples/cgm-dashboard.ipynb <your-project>/dashboard.ipynb
    ```
-2. It needs `matplotlib` (already in the template's `pyproject.toml`). No `cgmquantify`.
+2. It needs `matplotlib`, `ipywidgets`, and `anywidget` — all already in the template's
+   `pyproject.toml` (the latter two back the interactive showcase's Plotly `FigureWidget`).
+   No `cgmquantify`.
 3. Iterate on visuals without a live launch using the **dev fallback** in the scaffold
    cell (comment the launch lines, hardcode `patient_id = 40006`; needs `$JHE_URL`/`$JHE_TOKEN`).
 
