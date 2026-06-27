@@ -23,7 +23,7 @@ def test_notebook_code_executes(tmp_path, monkeypatch):
     # Fake SMART token file + env
     token_file = tmp_path / "smart_token.json"
     token_file.write_text(json.dumps({
-        "token": {"access_token": "TEST", "patient": "P1", "scope": "patient/*.read"},
+        "token": {"access_token": "TEST", "id_token": "TEST-ID-TOKEN", "patient": "P1", "scope": "patient/*.read openid fhirUser"},
         "fhir_url": "https://fhir.test",
         "smart_config": {},
     }))
