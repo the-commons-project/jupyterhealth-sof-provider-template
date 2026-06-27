@@ -24,32 +24,49 @@ There are two test paths for the SMART launch:
 - The patient's **MRN** must be stored on the JHE patient as its **external identifier**,
   and must match the MRN the EHR exposes on `Patient.identifier`. This is the join key.
 
-> **How the app reaches JHE.** The SMART launch gives the app an *EHR* access token. By
-> default the app exchanges that token for a JHE token (RFC 8693, JHE's `/o/token-exchange`),
-> so the provider does **not** sign into JHE separately. For that to work JHE must be
-> configured to trust the EHR issuer (`TRUSTED_TOKEN_IDP`) and have the launching
-> Practitioner on file. As a dev/test shortcut you can instead set a static `JHE_TOKEN`
-> (see step 1), which bypasses the exchange.
+> **How the app reaches JHE.** At launch the EHR gives the app an OIDC **id_token**.
+> The app sends that token to JHE's `/o/token-exchange` (RFC 8693); JHE verifies it
+> offline against the EHR's JWKS, reads the `fhirUser` claim, maps it to a JHE
+> Practitioner, and issues a JHE access token — no separate JHE login needed.
+> For this to work JHE must be configured with `TRUSTED_TOKEN_ISSUERS` (the EHR's OIDC
+> issuer URL) and `TRUSTED_TOKEN_AUDIENCE` (this app's `client_id`), and the launching
+> Practitioner must exist in JHE keyed by the EHR's Practitioner id.
+> As a **dev/test shortcut** you can set a static `JHE_TOKEN` (see step 1) to bypass
+> the exchange entirely.
 
 ---
 
-## 1. Get your JHE base URL (token exchange needs no `JHE_TOKEN`)
+## 1. Get your JHE base URL and configure the token exchange
 
-Note your JHE base URL — that's your `JHE_URL` (e.g. `https://jhe.fly.dev`). With token
-exchange (the default), the app mints its JHE token from the SMART launch, so there is no
-`JHE_TOKEN` to create. Two things must be true on the JHE instance for the exchange to
-succeed (coordinate with whoever runs it):
+Note your JHE base URL — that's your `JHE_URL` (e.g. `https://jhe.fly.dev`). With the
+id_token exchange (the default), the app mints its JHE token automatically from the SMART
+launch, so there is no `JHE_TOKEN` to create or manage. Three things must be in place
+(coordinate with whoever runs the JHE instance):
 
-- `TRUSTED_TOKEN_IDP` is set to the EHR's issuer so JHE trusts the launch token. If your
-  EHR's OIDC issuer differs from its FHIR base, set `JHE_TRUSTED_ISS` in `.env` to match.
-- The launching **Practitioner** exists in JHE keyed by the issuer's identifier, and the
-  patient you'll view is enrolled with the MRN as their external id.
+1. **Register the SMART app at the EHR** with `openid fhirUser` in the scopes so the EHR
+   includes an id_token and a `fhirUser` claim in the launch response. See
+   [ehr-registration.md](ehr-registration.md) for the full registration checklist.
 
-**Dev/test shortcut — a static `JHE_TOKEN`.** To skip the exchange, register this app as an
-**OAuth2 Client** in the **JHE Admin SPA** (the `/portal` path on your JHE host, e.g.
-`https://jhe.fly.dev/portal`), complete JHE's Authorization-Code-with-PKCE flow, and use the
-resulting practitioner access token as `JHE_TOKEN`. When `JHE_TOKEN` is set the app uses it
-and skips token exchange.
+2. **Configure JHE to trust the EHR** — set these two env vars on the JHE deployment:
+   - `TRUSTED_TOKEN_ISSUERS` — the EHR's OIDC issuer URL (the `iss` in the id_token,
+     typically the FHIR base URL, e.g. `https://fhir.ehr.example/r4`). Comma-separate
+     multiple issuers if needed.
+   - `TRUSTED_TOKEN_AUDIENCE` — this app's `client_id` as registered at the EHR (the
+     `aud` the EHR puts in the id_token).
+
+3. **Seed the JHE Practitioner** — the launching clinician must exist in JHE with an
+   `identifier` whose value equals the EHR's Practitioner id (the `fhirUser` claim in
+   the id_token, e.g. `Practitioner/abc123` → id `abc123`).
+
+> **Note:** the legacy `TRUSTED_TOKEN_IDP` single-issuer setting is still supported and
+> auto-added to the issuer list, but `TRUSTED_TOKEN_ISSUERS` is preferred for new setups.
+
+**Dev/test shortcut — a static `JHE_TOKEN` (skip exchange entirely).** To bypass the
+exchange during development, register this app as an **OAuth2 Client** in the **JHE Admin
+SPA** (the `/portal` path on your JHE host, e.g. `https://jhe.fly.dev/portal`), complete
+JHE's Authorization-Code-with-PKCE flow, and paste the resulting practitioner access token
+as `JHE_TOKEN`. When `JHE_TOKEN` is set the app uses it directly and skips the id_token
+exchange. **This shortcut is for dev/test only — do not use it in production.**
 
 ---
 
@@ -58,7 +75,7 @@ and skips token exchange.
 Generation already created `.env` from your answers (it's gitignored — there is no
 `.env.example`). The app loads `.env` at runtime, so edits take effect on the next run.
 Open `.env` and set:
-- `JHE_TOKEN` — leave blank to use token exchange; set it only for the dev/test shortcut
+- `JHE_TOKEN` — **dev/test only shortcut**: leave blank (the default) to use the id_token exchange; set it only to bypass exchange during development
 - `JHE_URL` — from step 1 (e.g. `https://jhe.fly.dev`); pre-filled from your answer
 - `SMART_CLIENT_ID` — the `client_id` from your EHR app registration (public client +
   PKCE; no secret); pre-filled, override here after registering
@@ -147,6 +164,7 @@ pytest tests/test_smoke.py
 | `LaunchContextError: No identifier with system ... found` | `MRN_IDENTIFIER_SYSTEM` doesn't match the EHR's MRN system | Inspect the EHR `Patient.identifier` and set the correct system |
 | `PatientNotInJHE: No JupyterHealth patient found for MRN ...` | JHE has no patient whose external id == that MRN | Add/align the patient's external identifier in JHE |
 | `LaunchContextError: Failed to fetch Patient/...` | EHR token/scope issue or wrong FHIR base | Check the SMART scopes include `patient/*.read` and the EHR FHIR base |
-| `TokenExchangeError` / "trusted issuer" / "Practitioner not found" | JHE doesn't trust the EHR issuer, or the Practitioner isn't on file | Set the issuer JHE expects via `JHE_TRUSTED_ISS`; confirm JHE's `TRUSTED_TOKEN_IDP` and that the Practitioner exists in JHE |
-| JHE calls return 401 | `JHE_TOKEN` missing/expired, or app not registered as a JHE Client | Re-issue the token (step 1); confirm the Client is registered in the JHE Admin SPA |
+| `TokenExchangeError` / "trusted issuer" | JHE's `TRUSTED_TOKEN_ISSUERS` doesn't include the EHR issuer, or `TRUSTED_TOKEN_AUDIENCE` doesn't match the app's `client_id` | Add the EHR OIDC issuer to `TRUSTED_TOKEN_ISSUERS` and confirm `TRUSTED_TOKEN_AUDIENCE` equals this app's `client_id` |
+| `TokenExchangeError` / "Practitioner not found" | The EHR Practitioner id from `fhirUser` doesn't match any JHE Practitioner `identifier` | Seed the JHE Practitioner with an `identifier` equal to the EHR Practitioner id (step 1 above) |
+| JHE calls return 401 | `JHE_TOKEN` expired (dev shortcut only), or app not registered as a JHE Client | Re-issue the dev token or switch to the id_token exchange (step 1); confirm the Client is registered in the JHE Admin SPA |
 | "No <type> data for this patient" | No observations of that type in JHE for the patient | Confirm data exists; check `JHE_DATA_TYPE_CODES` (esp. the provisional `steps` code) |
