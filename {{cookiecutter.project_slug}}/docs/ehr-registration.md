@@ -1,14 +1,18 @@
-# Registering this app with Epic
+# Registering this app with your EHR
 
 This app is a **SMART on FHIR provider-launch** application. Register it under your
-own Epic organization; The Commons Project is not involved in your registration or
-security review.
+own EHR (Epic, Medplum, Cerner, etc.); The Commons Project is not involved in your
+registration or security review.
 
-## 1. Create the app in the Epic App Orchard / vendor portal
+## 1. Create the app in your EHR's developer / vendor portal
 - App type: **Provider-facing (EHR launch)**
 - Launch URL: `https://<your-host>/smart-on-fhir/launch`
 - Redirect/OAuth callback URL: `https://<your-host>/smart-on-fhir/callback`
 - Client type: **Public client (PKCE)**
+
+> Where this lives depends on the EHR — e.g. the **Epic** App Orchard / vendor portal,
+> or a **Medplum** ClientApplication / SMART App. The launch + redirect URLs and the
+> PKCE public-client type are the same regardless.
 
 ## 2. Request these SMART scopes
 ```
@@ -18,9 +22,11 @@ security review.
 patient. Add `fhirUser`/`openid` for identity.
 
 ## 3. Find your MRN identifier system
-The app matches the Epic patient to JHE by MRN. In Epic, inspect a test
+The app matches the EHR patient to JHE by MRN. In your EHR, inspect a test
 `Patient.identifier` and copy the `system` value of the MRN identifier into
-`MRN_IDENTIFIER_SYSTEM` (see deployment.md).
+`MRN_IDENTIFIER_SYSTEM` (see deployment.md). On EHRs where you control the test data
+(e.g. Medplum), set the identifier yourself so its value matches the JHE patient's
+external id.
 
 ## 4. Start your institutional security review
 Provide your security team: the deploy host, the SMART scopes above, and a note that

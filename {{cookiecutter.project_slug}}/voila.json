@@ -1,6 +1,6 @@
 {
     "VoilaConfiguration": {
-        "file_whitelist": ["dashboard.ipynb"],
+        "file_allowlist": ["dashboard.ipynb"],
         "strip_sources": true,
         "theme": "light"
     }
