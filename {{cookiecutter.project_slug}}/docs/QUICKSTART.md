@@ -76,7 +76,10 @@ Generation already created `.env` from your answers (it's gitignored — there i
 `.env.example`). The app loads `.env` at runtime, so edits take effect on the next run.
 Open `.env` and set:
 - `JHE_TOKEN` — **dev/test only shortcut**: leave blank (the default) to use the id_token exchange; set it only to bypass exchange during development
-- `JHE_URL` — from step 1 (e.g. `https://jhe.fly.dev`); pre-filled from your answer
+- `JHE_URL` — from step 1 (e.g. `https://jhe.fly.dev`); pre-filled from your answer.
+  **Must exactly match the JHE instance's `SITE_URL`** (same scheme and host, no trailing-slash
+  difference) — the token-exchange `audience` check is an exact string comparison, so any
+  mismatch causes every exchange to fail with HTTP 400.
 - `SMART_CLIENT_ID` — the `client_id` from your EHR app registration (public client +
   PKCE; no secret); pre-filled, override here after registering
 - `SMART_SCOPES` — SMART scopes for the launch; pre-filled
