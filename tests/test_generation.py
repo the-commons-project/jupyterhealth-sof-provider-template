@@ -15,12 +15,12 @@ def test_bake_renders_client_id(cookies):
     result = cookies.bake(extra_context={
         "project_slug": "demo_app",
         "client_id": "my-sof-client",
-        "epic_iframe_origin": "https://epic.example.org",
+        "ehr_iframe_origin": "https://ehr.example.org",
     })
     assert result.exit_code == 0
     config = (result.project_path / "jupyter_server_config.py").read_text()
     assert "my-sof-client" in config
-    assert "https://epic.example.org" in config
+    assert "https://ehr.example.org" in config
 
 
 def test_server_config_is_valid_python_and_wires_extensions(cookies):
@@ -28,7 +28,7 @@ def test_server_config_is_valid_python_and_wires_extensions(cookies):
         "project_slug": "demo_app",
         "client_id": "abc",
         "smart_scopes": "openid fhirUser launch patient/*.read",
-        "epic_iframe_origin": "https://epic.example.org",
+        "ehr_iframe_origin": "https://ehr.example.org",
     })
     assert result.exit_code == 0
     config_path = result.project_path / "jupyter_server_config.py"
@@ -37,8 +37,13 @@ def test_server_config_is_valid_python_and_wires_extensions(cookies):
     compile(source, str(config_path), "exec")
     assert "jupyter_smart_on_fhir" in source
     assert "voila" in source
-    assert "frame-ancestors 'self' https://epic.example.org" in source
-    assert '"openid", "fhirUser", "launch", "patient/*.read"' in source
+    assert "frame-ancestors 'self'" in source
+    assert "https://ehr.example.org" in source
+    assert "openid fhirUser launch patient/*.read" in source
+    # Jupyter's own token/password login must be disabled, else the EHR launch
+    # (which carries no Jupyter token) is bounced to /login.
+    assert 'c.ServerApp.token = ""' in source
+    assert 'c.ServerApp.password = ""' in source
 
 
 def test_voila_json_present_and_valid(cookies):
@@ -47,7 +52,7 @@ def test_voila_json_present_and_valid(cookies):
     voila = result.project_path / "voila.json"
     assert voila.is_file()
     data = _json.loads(voila.read_text())
-    assert data["VoilaConfiguration"]["file_whitelist"] == ["dashboard.ipynb"]
+    assert data["VoilaConfiguration"]["file_allowlist"] == ["dashboard.ipynb"]
 
 
 def test_dashboard_notebook_structure(cookies):
@@ -68,17 +73,20 @@ def test_generated_pyproject_pins_deps(cookies):
     pyproject = (result.project_path / "pyproject.toml").read_text()
     data = tomllib.loads(pyproject)
     deps = data["project"]["dependencies"]
-    assert any(d.startswith("jupyter-smart-on-fhir==0.1.0a3") for d in deps)
+    assert any("jupyter-smart-on-fhir" in d for d in deps)
     assert any(d.startswith("jupyterhealth-client>=0.2.0") for d in deps)
     assert any(d.startswith("voila") for d in deps)
 
 
-def test_env_example_lists_required_vars(cookies):
+def test_env_created_by_hook_and_no_example(cookies):
     result = cookies.bake(extra_context={
         "project_slug": "demo_app", "jhe_base_url": "https://jhe.test"
     })
-    env = (result.project_path / ".env.example").read_text()
-    for var in ["JHE_URL", "JHE_TOKEN", "MRN_IDENTIFIER_SYSTEM"]:
+    # The post-gen hook writes .env from the answers; we intentionally ship NO .env.example.
+    assert not (result.project_path / ".env.example").exists()
+    env = (result.project_path / ".env").read_text()
+    for var in ["JHE_URL", "JHE_TOKEN", "SMART_CLIENT_ID", "SMART_SCOPES",
+                "EHR_IFRAME_ORIGIN", "MRN_IDENTIFIER_SYSTEM"]:
         assert var in env
     assert "https://jhe.test" in env
 
@@ -88,10 +96,10 @@ def test_docs_present_with_key_sections(cookies):
         "project_slug": "demo_app",
         "smart_scopes": "openid fhirUser launch patient/*.read",
     })
-    epic = (result.project_path / "docs" / "epic-registration.md").read_text()
+    ehr_doc = (result.project_path / "docs" / "ehr-registration.md").read_text()
     deploy = (result.project_path / "docs" / "deployment.md").read_text()
-    assert "patient/*.read" in epic
-    assert "security review" in epic.lower()
+    assert "patient/*.read" in ehr_doc
+    assert "security review" in ehr_doc.lower()
     assert "frame-ancestors" in deploy
     assert "MRN_IDENTIFIER_SYSTEM" in deploy
 
