@@ -6,14 +6,40 @@ resolves the launched patient to a JHE record **by MRN**, fetches their device d
 and renders it via a Voilà-served Jupyter notebook. You add analytics/viz by editing
 one notebook cell.
 
+## Before you generate — have these ready
+
+Generating takes a minute; the values it prompts for come from two systems you set up
+first. Gather these so the answers are obvious:
+
+**From your EHR (Epic, Medplum, …) — where the app launches:**
+- The EHR's **web origin** that will embed the app in an iframe (e.g. `https://app.medplum.com`) — needed for the CSP.
+- A registered **SMART app** there, which gives you a **`client_id`**. You can register
+  *after* generating and paste the real `client_id` into `.env` (`SMART_CLIENT_ID`) — a
+  placeholder works at generation time.
+- A choice of which **`Patient.identifier` system** holds the MRN. You'll set this same
+  system + value on your test patient in the EHR.
+
+**From your JupyterHealth Exchange (JHE) instance — where the data lives:**
+- Its **base URL** (e.g. `https://jhe.fly.dev`).
+- A **patient with data**, and that patient's **external identifier** (the MRN). The EHR
+  patient's identifier *value* must equal this — it's the join key between the two systems.
+- A way to **read** that data: either JHE configured to trust your EHR (token exchange),
+  or a **JHE token** for the dev/test shortcut. See the generated `docs/QUICKSTART.md`.
+
+**On your machine:** Python 3.11+, `cookiecutter`, and (optionally) Docker.
+
 ## Generate a project
 
     pip install cookiecutter
-    cookiecutter gh:the-commons-project/jupyterhealth-sof-provider-template
+    # from a local checkout (current):
+    cookiecutter /path/to/jupyterhealth-sof-provider-template
+    # or, once published to the jupyterhealth org (public):
+    cookiecutter gh:jupyterhealth/jupyterhealth-sof-provider-template
 
-You'll be prompted for: project name, SMART `client_id`, JHE base URL, Epic FHIR base,
-SMART scopes, the Epic iframe origin (for CSP), the MRN identifier system, and the
-default data types.
+You'll be prompted for: project name, SMART `client_id`, JHE base URL, SMART scopes,
+the EHR iframe origin (for CSP), and the MRN identifier system. Each prompt shows a
+one-line description of what to enter. The generator then writes a ready-to-edit `.env`
+from your answers (no `.env.example` — see below); you just add your `JHE_TOKEN`.
 
 ## What you get
 - `dashboard.ipynb` — **edit the marked cell** to add your analytics/visualization.
@@ -21,7 +47,7 @@ default data types.
 - `jupyter_server_config.py` — SMART + Voilà + CSP, pre-filled from your answers.
 - `Dockerfile`, `docker-compose.yml`, `fly.toml.example` — deploy.
 - `docs/QUICKSTART.md` — end-to-end walkthrough (get a JHE token, simulate a launch, see data).
-- `docs/epic-registration.md`, `docs/deployment.md` — register and ship it.
+- `docs/ehr-registration.md`, `docs/deployment.md` — register and ship it.
 
 ## Develop
     cd <your-project>
@@ -35,6 +61,6 @@ default data types.
 - [Voilà](https://voila.readthedocs.io/) (notebook → web app)
 
 ## Scope
-Generic infrastructure (a POC scaffold). You own clinical analytics, Epic registration,
+Generic infrastructure (a POC scaffold). You own clinical analytics, EHR registration,
 security review, production deployment, and concurrent-provider hardening. See the
 generated `docs/`.

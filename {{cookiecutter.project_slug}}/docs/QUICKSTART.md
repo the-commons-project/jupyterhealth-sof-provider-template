@@ -55,14 +55,17 @@ and skips token exchange.
 
 ## 2. Configure
 
-```
-cp .env.example .env
-```
-Set in `.env`:
-- `JHE_URL` — from step 1 (e.g. `https://jhe.fly.dev`)
+Generation already created `.env` from your answers (it's gitignored — there is no
+`.env.example`). The app loads `.env` at runtime, so edits take effect on the next run.
+Open `.env` and set:
 - `JHE_TOKEN` — leave blank to use token exchange; set it only for the dev/test shortcut
+- `JHE_URL` — from step 1 (e.g. `https://jhe.fly.dev`); pre-filled from your answer
+- `SMART_CLIENT_ID` — the `client_id` from your EHR app registration (public client +
+  PKCE; no secret); pre-filled, override here after registering
+- `SMART_SCOPES` — SMART scopes for the launch; pre-filled
+- `EHR_IFRAME_ORIGIN` — the EHR origin allowed to embed the app (CSP); pre-filled
 - `MRN_IDENTIFIER_SYSTEM` — the EHR `Patient.identifier` system that holds the MRN
-  (see [epic-registration.md](epic-registration.md) §3 for how to find it; MedPlum has
+  (see [ehr-registration.md](ehr-registration.md) §3 for how to find it; MedPlum has
   its own identifier system)
 - `JHE_DATA_TYPE_CODES` (optional) — only if your data types differ from the defaults
 
@@ -126,9 +129,9 @@ pytest tests/test_smoke.py
 
 ---
 
-## 6. Register with Epic and deploy
+## 6. Register with your EHR and deploy
 
-- [epic-registration.md](epic-registration.md) — register the app with Epic, scopes,
+- [ehr-registration.md](ehr-registration.md) — register the app with your EHR, scopes,
   and starting your security review.
 - [deployment.md](deployment.md) — deploy (Docker / fly.io), the **iframe/CSP gotcha**,
   and the POC single-provider concurrency limitation.

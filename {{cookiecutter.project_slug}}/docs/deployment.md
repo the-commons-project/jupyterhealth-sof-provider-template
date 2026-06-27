@@ -5,12 +5,18 @@
 > launch). This file is the deployment-specific reference.
 
 ## Configure
-Copy `.env.example` to `.env` and set:
+Generation created `.env` from your answers (gitignored; there is no `.env.example`).
+The app loads `.env` at runtime — edit it and the change takes effect on the next run.
+Values:
 - `JHE_URL` — your JupyterHealth Exchange base URL (e.g. `https://jhe.fly.dev`)
 - `JHE_TOKEN` — a JHE bearer token authorized to read your patients. Obtain it by
   registering this app as an **OAuth2 Client in the JHE Admin SPA** (your JHE instance's
   `/portal`) and completing JHE's OAuth flow — see [QUICKSTART.md](QUICKSTART.md) §1.
-- `MRN_IDENTIFIER_SYSTEM` — the Epic `Patient.identifier` system that holds the MRN
+- `SMART_CLIENT_ID` — the SMART `client_id` from your EHR app registration (public
+  client + PKCE; no secret).
+- `SMART_SCOPES` — SMART scopes requested at launch (space-separated).
+- `EHR_IFRAME_ORIGIN` — the EHR web origin allowed to embed the app (CSP frame-ancestors).
+- `MRN_IDENTIFIER_SYSTEM` — the EHR `Patient.identifier` system that holds the MRN
 - `JHE_DATA_TYPE_CODES` (optional) — JSON to override the data-type → OMH code map.
   **Note:** the `steps` code default (`omh:step-count:3.0`) is provisional; set it to
   whatever your ingestion path (Garmin shim / Validic) actually emits.
@@ -27,13 +33,14 @@ A `Dockerfile` and `fly.toml.example` are provided. Any container host works.
 
 ## The iframe / CSP gotcha (read this)
 Voilà and Jupyter default to `Content-Security-Policy: frame-ancestors 'self'`, which
-**blocks Epic from embedding the app** and shows a blank frame. `jupyter_server_config.py`
-sets:
+**blocks the EHR from embedding the app** and shows a blank frame. `jupyter_server_config.py`
+sets the header from the `EHR_IFRAME_ORIGIN` value in your `.env`:
 ```
-frame-ancestors 'self' {{ cookiecutter.epic_iframe_origin }}
+frame-ancestors 'self' <EHR_IFRAME_ORIGIN>
 ```
-If Epic shows a blank frame, verify the response `Content-Security-Policy` header
-includes your Epic origin (DevTools → Network → the document response). Add more
+If the EHR shows a blank frame, set `EHR_IFRAME_ORIGIN` in `.env` to the EHR's origin and
+verify the response `Content-Security-Policy` header includes it (DevTools → Network → the
+document response). Add more
 origins as space-separated values.
 
 ## Concurrency note (POC scope)
