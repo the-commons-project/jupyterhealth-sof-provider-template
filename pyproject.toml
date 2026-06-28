@@ -1,23 +1,35 @@
 [project]
-name = "jupyterhealth-sof-provider-template"
+name = "jupyterhealth-sof-provider-app"
 version = "0.1.0"
-description = "Cookiecutter template for SMART on FHIR provider apps on JupyterHealth Exchange"
+description = "SMART on FHIR provider app on JupyterHealth Exchange"
 requires-python = ">=3.11"
 license = "BSD-3-Clause"
 license-files = ["LICENSE"]
+dependencies = [
+    # Temporary: pinned to a fork carrying two not-yet-released fixes — the get_next_url
+    # None crash (merged upstream #22) and the iss trailing-slash SMART-discovery 500.
+    # Revert to "jupyter-smart-on-fhir==0.1.0a4" once both are released to PyPI.
+    "jupyter-smart-on-fhir @ git+https://github.com/surfdoc/jupyter-smart-on-fhir.git@684ed3d8342cf682cd473ad38c46cd66eec3c626",
+    "jupyterhealth-client>=0.2.0",
+    "voila>=0.5",
+    "jupyter-server>=2.0",
+    "ipykernel>=6.0",
+    "pandas>=2.0",
+    "plotly>=5.0",
+    "matplotlib>=3.7",
+    # ipywidgets + anywidget power interactive (ipywidgets/Plotly FigureWidget)
+    # dashboards under Voilà — e.g. the examples/cgm-dashboard.ipynb showcase.
+    "ipywidgets>=8.0",
+    "anywidget>=0.9",
+    "python-dotenv>=1.0",
+    "requests>=2",
+]
 
 [project.optional-dependencies]
-dev = [
-    "cookiecutter>=2.5",
-    "pytest>=8.0",
-    "pytest-cookies>=0.7",
-    "jupyterhealth-client>=0.2.0",
-    "pandas>=2.0",
-    "nbclient>=0.9",
-    "nbformat>=5.9",
-    "plotly>=5.0",
-    "python-dotenv>=1.0",
-]
+test = ["pytest>=8.0", "nbformat>=5.9"]
+
+[tool.setuptools]
+packages = ["provider_app"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -16,7 +16,7 @@ registration or security review.
 
 ## 2. Request these SMART scopes
 ```
-{{ cookiecutter.smart_scopes }}
+openid fhirUser launch patient/*.read
 ```
 `launch` is required for EHR launch; `patient/*.read` lets the app read the launched
 patient. Add `fhirUser`/`openid` for identity.
