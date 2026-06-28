@@ -80,7 +80,7 @@ The app mints its JHE token at launch via the id_token exchange, so there is no 
 ```
 JHE_URL=https://jhe.fly.dev
 SMART_CLIENT_ID=<your Medplum SMART client_id>
-EHR_IFRAME_ORIGIN=https://app.medplum.com            # CSP frame-ancestors
+EHR_IFRAME_ORIGIN=https://app.medplum.com            # unused by Medplum (redirect launch); only iframe EHRs need it
 MRN_IDENTIFIER_SYSTEM=<same system as the Medplum patient identifier>
 ```
 

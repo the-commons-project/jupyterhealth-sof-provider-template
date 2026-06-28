@@ -1,8 +1,8 @@
 # JupyterHealth SoF Provider App
 
 A SMART on FHIR **provider-launch** application backed by the JupyterHealth Exchange
-(JHE). It embeds in an EHR iframe, resolves the launched patient to a JHE record **by
-MRN**, fetches their device data, and renders it via a Voilà-served Jupyter notebook.
+(JHE). Launched from an EHR via SMART on FHIR, it resolves the launched patient to a JHE
+record **by MRN**, fetches their device data, and renders it via a Voilà-served Jupyter notebook.
 You add analytics/viz by editing one notebook cell.
 
 This is a **template repository** — you run it in place; there is no generation step.
