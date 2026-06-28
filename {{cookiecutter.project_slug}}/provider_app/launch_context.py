@@ -22,6 +22,7 @@ class LaunchContextError(Exception):
 @dataclass
 class LaunchContext:
     access_token: str
+    id_token: str
     fhir_base: str
     fhir_patient_id: str
     patient_mrn: str
@@ -70,11 +71,13 @@ def current(http_get: Optional[Callable[..., Any]] = None) -> LaunchContext:
     data = _read_token()
     token = data.get("token") or {}
     access_token = token.get("access_token")
+    id_token = token.get("id_token")
     fhir_patient_id = token.get("patient")  # SMART token 'patient' field is the EHR patient resource ID
     fhir_base = data.get("fhir_url")
-    if not access_token or not fhir_patient_id or not fhir_base:
+    if not access_token or not id_token or not fhir_patient_id or not fhir_base:
         raise LaunchContextError(
-            "Token file is missing access_token, patient, or fhir_url."
+            "Token file is missing access_token, id_token, patient, or fhir_url. "
+            "Ensure the SMART launch requests the 'openid fhirUser' scopes."
         )
 
     mrn_system = os.environ.get("MRN_IDENTIFIER_SYSTEM")
@@ -93,6 +96,7 @@ def current(http_get: Optional[Callable[..., Any]] = None) -> LaunchContext:
 
     return LaunchContext(
         access_token=access_token,
+        id_token=id_token,
         fhir_base=fhir_base,
         fhir_patient_id=fhir_patient_id,
         patient_mrn=_extract_mrn(patient_resource, mrn_system),

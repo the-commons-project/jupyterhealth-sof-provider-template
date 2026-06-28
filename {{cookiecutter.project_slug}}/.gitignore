@@ -1,4 +1,4 @@
-# Secrets — never commit. Your JHE_TOKEN / EHR token live here.
+# Secrets — never commit. Your EHR/JHE tokens and local config live here.
 .env
 smart_token.json
 

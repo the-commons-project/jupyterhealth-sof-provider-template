@@ -1,11 +1,11 @@
 """Authenticate to the JupyterHealth Exchange from the SMART launch.
 
-The provider authenticates once into the EHR; JHE exchanges that EHR access token
-for its own token via RFC 8693 token exchange, so there is no second OAuth login.
-JHE must be configured to trust the EHR issuer (its TRUSTED_TOKEN_IDP) and have the
-launching Practitioner on file keyed by the issuer's identifier.
-
-A static $JHE_TOKEN, when set, is used instead as a dev/test shortcut.
+The provider authenticates once into the EHR; JHE verifies the EHR id_token
+and exchanges it for its own token via RFC 8693 token exchange, so there is no
+second OAuth login. JHE must be configured to trust the EHR issuer (its
+TRUSTED_TOKEN_IDP) and have the launching Practitioner on file keyed by the
+issuer's identifier. The SMART launch must request the 'openid fhirUser' scopes
+so that the EHR issues an id_token.
 """
 from __future__ import annotations
 
@@ -18,6 +18,7 @@ from jupyterhealth_client import JupyterHealthClient
 from .launch_context import LaunchContext
 
 _ACCESS_TOKEN_TYPE = "urn:ietf:params:oauth:token-type:access_token"
+_ID_TOKEN_TYPE = "urn:ietf:params:oauth:token-type:id_token"
 _GRANT_TYPE = "urn:ietf:params:oauth:grant-type:token-exchange"
 
 
@@ -45,8 +46,8 @@ def exchange_token(context: LaunchContext, jhe_url: Optional[str] = None) -> str
         response = requests.post(
             f"{url}/o/token-exchange",
             data={
-                "subject_token": context.access_token,
-                "subject_token_type": _ACCESS_TOKEN_TYPE,
+                "subject_token": context.id_token,
+                "subject_token_type": _ID_TOKEN_TYPE,
                 "requested_token_type": _ACCESS_TOKEN_TYPE,
                 "audience": url,
                 "grant_type": _GRANT_TYPE,
@@ -63,10 +64,8 @@ def exchange_token(context: LaunchContext, jhe_url: Optional[str] = None) -> str
 def client_for_launch(context: LaunchContext, jhe_url: Optional[str] = None) -> JupyterHealthClient:
     """Return a JupyterHealthClient for this launch.
 
-    Uses a static $JHE_TOKEN when set (dev/test shortcut); otherwise mints a JHE
-    token from the SMART launch via token exchange.
+    The JHE token is always minted from the SMART launch by exchanging the EHR
+    id_token (RFC 8693) — there is no static-token shortcut.
     """
     url = _jhe_url(jhe_url)
-    if os.environ.get("JHE_TOKEN"):
-        return JupyterHealthClient(url=url)
     return JupyterHealthClient(url=url, token=exchange_token(context, url))

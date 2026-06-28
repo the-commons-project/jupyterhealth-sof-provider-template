@@ -39,15 +39,15 @@ still gets the report, with the showcase quietly noting the absent signals.
    `pyproject.toml` (the latter two back the interactive showcase's Plotly `FigureWidget`).
    No `cgmquantify`.
 3. Iterate on visuals without a live launch using the **dev fallback** in the scaffold
-   cell (comment the launch lines, hardcode `patient_id = 40006`; needs `$JHE_URL`/`$JHE_TOKEN`).
+   cell (comment the launch lines, hardcode `patient_id = 40006`; needs `$JHE_URL` and a
+   JHE client/token you supply in the notebook for local-only iteration).
 
-### Auth model (current)
+### Auth model
 
-JHE does not yet honor the EHR provider identity token, so this is **double auth**:
-the provider logs into the **EHR** (Medplum) during the SMART launch, and the app holds a
-**static `JHE_TOKEN`** for JHE (minted once, set in `.env`). There is no second interactive
-JHE login per launch. `provider_app/jhe_auth.py` already supports token exchange too —
-when JHE trusts the EHR issuer, drop `JHE_TOKEN` and it switches automatically.
+There is **no separate JHE login**: the provider logs into the **EHR** (Medplum) during the
+SMART launch, and `provider_app/jhe_auth.py` exchanges the EHR id_token for a JHE token
+(RFC 8693) on every launch. JHE must be configured to trust the EHR issuer
+(`TRUSTED_TOKEN_ISSUERS` / `TRUSTED_TOKEN_AUDIENCE`) — see the generated `docs/QUICKSTART.md`.
 
 ## Reproducible demo values — Medplum (EHR) + jhe.fly.dev (JHE)
 
@@ -68,14 +68,14 @@ Verified against the fly.dev iglu seed (study **30006 — Iglu CGM Test Data**).
 The resolver matches on identifier **value** only, so the EHR and JHE identifier
 *systems* need not agree — just make the **values equal**.
 
-### `.env` (static-token path)
+### `.env`
 
 ```
 JHE_URL=https://jhe.fly.dev
-JHE_TOKEN=<token minted from the JHE portal /o/ PKCE flow>
 MRN_IDENTIFIER_SYSTEM=<the system you stamped on the Medplum patient>
-# JHE_TRUSTED_ISS=    # leave unset — no token exchange while double-auth
+# JHE_TRUSTED_ISS=    # set only if JHE's trusted issuer differs from the EHR FHIR base
 ```
+The app mints its JHE token at launch via the id_token exchange, so there is no token to set.
 
 ### cookiecutter answers that matter
 
@@ -86,7 +86,8 @@ ehr_iframe_origin     = https://app.medplum.com      # CSP frame-ancestors — N
 mrn_identifier_system = <same system as the Medplum patient identifier>
 ```
 
-Generation writes these into a gitignored `.env` (no `.env.example`); you add `JHE_TOKEN`.
+Generation writes these into a gitignored `.env` (no `.env.example`); the app mints its JHE
+token at launch via the id_token exchange, so there's nothing to add.
 (`data_types` and `ehr_fhir_base` are no longer prompts — the CGM notebook fetches
 `blood_glucose` directly, and the FHIR base comes from the SMART launch token.)
 

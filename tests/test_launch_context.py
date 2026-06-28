@@ -6,7 +6,7 @@ from provider_app import launch_context
 def _write_token(tmp_path, patient="Patient123"):
     token_file = tmp_path / "smart_token.json"
     token_file.write_text(json.dumps({
-        "token": {"access_token": "ABC", "patient": patient, "scope": "patient/*.read"},
+        "token": {"access_token": "ABC", "id_token": "ID-TOKEN", "patient": patient, "scope": "patient/*.read"},
         "fhir_url": "https://fhir.example.org",
         "smart_config": {},
     }))
@@ -42,6 +42,7 @@ def test_current_reads_token_and_mrn(tmp_path, monkeypatch):
 
     ctx = launch_context.current(http_get=fake_get)
     assert ctx.access_token == "ABC"
+    assert ctx.id_token == "ID-TOKEN"
     assert ctx.fhir_base == "https://fhir.example.org"
     assert ctx.fhir_patient_id == "Patient123"
     assert ctx.patient_mrn == "MRN-999"
@@ -80,7 +81,7 @@ def test_ehr_http_error_wrapped(tmp_path, monkeypatch):
     import requests
     token_file = tmp_path / "smart_token.json"
     token_file.write_text(json.dumps({
-        "token": {"access_token": "ABC", "patient": "P1", "scope": "patient/*.read"},
+        "token": {"access_token": "ABC", "id_token": "ID-TOKEN", "patient": "P1", "scope": "patient/*.read"},
         "fhir_url": "https://fhir.example.org",
         "smart_config": {},
     }))
@@ -97,3 +98,26 @@ def test_ehr_http_error_wrapped(tmp_path, monkeypatch):
 
     with pytest.raises(launch_context.LaunchContextError):
         launch_context.current(http_get=fake_get)
+
+
+class _FakePatient:
+    ok = True
+
+    def json(self):
+        return {"id": "p1", "identifier": [{"system": "urn:mrn", "value": "MRN-1"}]}
+
+    def raise_for_status(self):
+        pass
+
+
+def test_launch_context_exposes_id_token(tmp_path, monkeypatch):
+    token_file = tmp_path / "smart_token.json"
+    token_file.write_text(json.dumps({
+        "token": {"access_token": "ehr-access", "id_token": "ehr-id-token", "patient": "p1"},
+        "fhir_url": "https://ehr.example.org/fhir",
+    }))
+    monkeypatch.setenv("SMART_TOKEN_FILE", str(token_file))
+    monkeypatch.setenv("MRN_IDENTIFIER_SYSTEM", "urn:mrn")
+
+    ctx = launch_context.current(http_get=lambda url, headers=None: _FakePatient())
+    assert ctx.id_token == "ehr-id-token"
