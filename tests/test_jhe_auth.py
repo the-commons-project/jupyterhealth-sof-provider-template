@@ -73,22 +73,10 @@ def test_exchange_token_raises_on_failure(monkeypatch):
         jhe_auth.exchange_token(_context())
 
 
-def test_client_for_launch_uses_static_token_when_set(monkeypatch):
+def test_client_for_launch_always_exchanges(monkeypatch):
+    # There is no static-token shortcut: client_for_launch always mints its JHE
+    # token via the id_token exchange (RFC 8693).
     monkeypatch.setenv("JHE_URL", "https://jhe.example.org")
-    monkeypatch.setenv("JHE_TOKEN", "static-token")
-
-    def fail_post(*a, **kw):
-        raise AssertionError("token exchange must not run when JHE_TOKEN is set")
-
-    monkeypatch.setattr(jhe_auth.requests, "post", fail_post)
-
-    client = jhe_auth.client_for_launch(_context())
-    assert client.session.headers["Authorization"] == "Bearer static-token"
-
-
-def test_client_for_launch_exchanges_when_no_static_token(monkeypatch):
-    monkeypatch.setenv("JHE_URL", "https://jhe.example.org")
-    monkeypatch.delenv("JHE_TOKEN", raising=False)
     monkeypatch.setattr(
         jhe_auth.requests, "post", lambda url, data=None, **kw: FakeResponse({"access_token": "minted"})
     )

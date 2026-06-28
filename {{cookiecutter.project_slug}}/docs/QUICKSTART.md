@@ -31,16 +31,14 @@ There are two test paths for the SMART launch:
 > For this to work JHE must be configured with `TRUSTED_TOKEN_ISSUERS` (the EHR's OIDC
 > issuer URL) and `TRUSTED_TOKEN_AUDIENCE` (this app's `client_id`), and the launching
 > Practitioner must exist in JHE keyed by the EHR's Practitioner id.
-> As a **dev/test shortcut** you can set a static `JHE_TOKEN` (see step 1) to bypass
-> the exchange entirely.
 
 ---
 
 ## 1. Get your JHE base URL and configure the token exchange
 
-Note your JHE base URL — that's your `JHE_URL` (e.g. `https://jhe.fly.dev`). With the
-id_token exchange (the default), the app mints its JHE token automatically from the SMART
-launch, so there is no `JHE_TOKEN` to create or manage. Three things must be in place
+Note your JHE base URL — that's your `JHE_URL` (e.g. `https://jhe.fly.dev`). The app mints
+its JHE token automatically from the SMART launch via the id_token exchange, so there is no
+token to create or manage. Three things must be in place
 (coordinate with whoever runs the JHE instance):
 
 1. **Register the SMART app at the EHR** with `openid fhirUser` in the scopes so the EHR
@@ -61,13 +59,6 @@ launch, so there is no `JHE_TOKEN` to create or manage. Three things must be in 
 > **Note:** the legacy `TRUSTED_TOKEN_IDP` single-issuer setting is still supported and
 > auto-added to the issuer list, but `TRUSTED_TOKEN_ISSUERS` is preferred for new setups.
 
-**Dev/test shortcut — a static `JHE_TOKEN` (skip exchange entirely).** To bypass the
-exchange during development, register this app as an **OAuth2 Client** in the **JHE Admin
-SPA** (the `/portal` path on your JHE host, e.g. `https://jhe.fly.dev/portal`), complete
-JHE's Authorization-Code-with-PKCE flow, and paste the resulting practitioner access token
-as `JHE_TOKEN`. When `JHE_TOKEN` is set the app uses it directly and skips the id_token
-exchange. **This shortcut is for dev/test only — do not use it in production.**
-
 ---
 
 ## 2. Configure
@@ -75,7 +66,6 @@ exchange. **This shortcut is for dev/test only — do not use it in production.*
 Generation already created `.env` from your answers (it's gitignored — there is no
 `.env.example`). The app loads `.env` at runtime, so edits take effect on the next run.
 Open `.env` and set:
-- `JHE_TOKEN` — **dev/test only shortcut**: leave blank (the default) to use the id_token exchange; set it only to bypass exchange during development
 - `JHE_URL` — from step 1 (e.g. `https://jhe.fly.dev`); pre-filled from your answer.
   **Must exactly match the JHE instance's `SITE_URL`** (same scheme and host, no trailing-slash
   difference) — the token-exchange `audience` check is an exact string comparison, so any
@@ -169,5 +159,5 @@ pytest tests/test_smoke.py
 | `LaunchContextError: Failed to fetch Patient/...` | EHR token/scope issue or wrong FHIR base | Check the SMART scopes include `patient/*.read` and the EHR FHIR base |
 | `TokenExchangeError` / "trusted issuer" | JHE's `TRUSTED_TOKEN_ISSUERS` doesn't include the EHR issuer, or `TRUSTED_TOKEN_AUDIENCE` doesn't match the app's `client_id` | Add the EHR OIDC issuer to `TRUSTED_TOKEN_ISSUERS` and confirm `TRUSTED_TOKEN_AUDIENCE` equals this app's `client_id` |
 | `TokenExchangeError` / "Practitioner not found" | The EHR Practitioner id from `fhirUser` doesn't match any JHE Practitioner `identifier` | Seed the JHE Practitioner with an `identifier` equal to the EHR Practitioner id (step 1 above) |
-| JHE calls return 401 | `JHE_TOKEN` expired (dev shortcut only), or app not registered as a JHE Client | Re-issue the dev token or switch to the id_token exchange (step 1); confirm the Client is registered in the JHE Admin SPA |
+| JHE calls return 401 | The exchanged JHE token was rejected (e.g. the launching Practitioner isn't on file in JHE, or trust isn't configured) | Confirm the token-exchange trust settings (step 1) and that the launching Practitioner exists in JHE |
 | "No <type> data for this patient" | No observations of that type in JHE for the patient | Confirm data exists; check `JHE_DATA_TYPE_CODES` (esp. the provisional `steps` code) |

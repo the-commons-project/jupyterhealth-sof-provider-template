@@ -12,7 +12,7 @@ from typing import Any, Optional
 import pandas as pd
 from jupyterhealth_client import Code, JupyterHealthClient
 
-from . import patient_resolver
+from . import identity, patient_resolver
 
 # Friendly data-type name -> JHE code. Code enum members where available;
 # string OMH codes otherwise. `steps` is provisional — confirm against the
@@ -62,20 +62,28 @@ def _filter_dates(df: pd.DataFrame, start: Optional[str], end: Optional[str]) ->
 
 
 def fetch(
-    mrn: str,
+    ctx,
     types: list[str],
     client: Optional[Any] = None,
     start: Optional[str] = None,
     end: Optional[str] = None,
 ) -> dict[str, pd.DataFrame]:
-    """Resolve the MRN to a JHE patient and return {data_type: tidy DataFrame}.
+    """Resolve the launched patient in JHE and return {data_type: tidy DataFrame}.
 
-    `client` defaults to a JupyterHealthClient built from $JHE_URL / $JHE_TOKEN.
-    `start`/`end` are inclusive ISO dates applied client-side.
+    `ctx` is the LaunchContext: its MRN is resolved to a JHE patient, and the
+    resolved record is identity-checked against the EHR Patient before any data is
+    returned (identity.assert_same_patient raises IdentityMismatch / IdentityUnverified
+    if it can't be confirmed they are the same person — failing closed). Taking the
+    full context here, rather than a bare MRN, makes that guard unavoidable.
+
+    `client` defaults to a JupyterHealthClient built from $JHE_URL and the launch
+    token. `start`/`end` are inclusive ISO dates applied client-side.
     """
     if client is None:
         client = JupyterHealthClient()
-    patient_id = patient_resolver.resolve_patient(mrn, client=client)
+    patient_id = patient_resolver.resolve_patient(ctx.patient_mrn, client=client)
+    jhe_patient = client.get_patient(patient_id)
+    identity.assert_same_patient(ctx, jhe_patient)  # raises IdentityMismatch / IdentityUnverified
 
     out: dict[str, pd.DataFrame] = {}
     for data_type in types:

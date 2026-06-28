@@ -6,7 +6,7 @@ the launched patient to a JupyterHealth Exchange record by MRN, fetches their de
 data, and renders it via a Voilà-served Jupyter notebook.
 
 ## Where to start
-- **`docs/QUICKSTART.md`** — **start here.** End-to-end: get a JHE token, configure,
+- **`docs/QUICKSTART.md`** — **start here.** End-to-end: configure the id_token exchange,
   simulate a SMART launch (MedPlum or fully local), and see data on screen.
 - **`dashboard.ipynb`** — edit the cell marked `ADD YOUR ANALYTICS + VISUALIZATION`
   to add your own analytics/visualization. The cells above it (launch context + data
@@ -16,8 +16,9 @@ data, and renders it via a Voilà-served Jupyter notebook.
 
 ## Develop
     # generation already created .env from your answers (it is gitignored).
-    # Edit .env: add JHE_TOKEN (JHE_URL / SMART_CLIENT_ID / SMART_SCOPES /
-    # EHR_IFRAME_ORIGIN / MRN_IDENTIFIER_SYSTEM are pre-filled). All config is read
+    # JHE_URL / SMART_CLIENT_ID / SMART_SCOPES / EHR_IFRAME_ORIGIN /
+    # MRN_IDENTIFIER_SYSTEM are pre-filled; the app mints its JHE token at launch
+    # via the id_token exchange, so there's no token to add. All config is read
     # from .env at runtime, so edits take effect on the next run — no code changes.
     pip install -e ".[test]"
     docker compose up --build      # run; complete a SMART launch from your EHR / MedPlum

@@ -23,8 +23,9 @@ first. Gather these so the answers are obvious:
 - Its **base URL** (e.g. `https://jhe.fly.dev`).
 - A **patient with data**, and that patient's **external identifier** (the MRN). The EHR
   patient's identifier *value* must equal this — it's the join key between the two systems.
-- A way to **read** that data: either JHE configured to trust your EHR (token exchange),
-  or a **JHE token** for the dev/test shortcut. See the generated `docs/QUICKSTART.md`.
+- JHE configured to **trust your EHR** so it accepts the id_token exchange (the app reads
+  data with the token it mints at launch — no separate JHE token). See the generated
+  `docs/QUICKSTART.md`.
 
 **On your machine:** Python 3.11+, `cookiecutter`, and (optionally) Docker.
 
@@ -39,14 +40,15 @@ first. Gather these so the answers are obvious:
 You'll be prompted for: project name, SMART `client_id`, JHE base URL, SMART scopes,
 the EHR iframe origin (for CSP), and the MRN identifier system. Each prompt shows a
 one-line description of what to enter. The generator then writes a ready-to-edit `.env`
-from your answers (no `.env.example` — see below); you just add your `JHE_TOKEN`.
+from your answers (no `.env.example` — see below); the app mints its JHE token at launch
+via the id_token exchange, so there's nothing to paste in.
 
 ## What you get
 - `dashboard.ipynb` — **edit the marked cell** to add your analytics/visualization.
 - `provider_app/` — launch context, MRN→JHE resolution, and data fetch (don't need to touch).
 - `jupyter_server_config.py` — SMART + Voilà + CSP, pre-filled from your answers.
 - `Dockerfile`, `docker-compose.yml`, `fly.toml.example` — deploy.
-- `docs/QUICKSTART.md` — end-to-end walkthrough (get a JHE token, simulate a launch, see data).
+- `docs/QUICKSTART.md` — end-to-end walkthrough (configure the id_token exchange, simulate a launch, see data).
 - `docs/ehr-registration.md`, `docs/deployment.md` — register and ship it.
 
 ## Develop

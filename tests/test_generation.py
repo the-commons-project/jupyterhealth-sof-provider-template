@@ -85,9 +85,11 @@ def test_env_created_by_hook_and_no_example(cookies):
     # The post-gen hook writes .env from the answers; we intentionally ship NO .env.example.
     assert not (result.project_path / ".env.example").exists()
     env = (result.project_path / ".env").read_text()
-    for var in ["JHE_URL", "JHE_TOKEN", "SMART_CLIENT_ID", "SMART_SCOPES",
+    for var in ["JHE_URL", "SMART_CLIENT_ID", "SMART_SCOPES",
                 "EHR_IFRAME_ORIGIN", "MRN_IDENTIFIER_SYSTEM"]:
         assert var in env
+    # The static-token shortcut is gone; the app always mints its JHE token via exchange.
+    assert "JHE_TOKEN" not in env
     assert "https://jhe.test" in env
 
 
@@ -109,8 +111,8 @@ def test_quickstart_walks_user_through(cookies):
     quickstart = (result.project_path / "docs" / "QUICKSTART.md").read_text()
     # the end-to-end journey is covered
     assert "Prerequisites" in quickstart
-    assert "JHE_TOKEN" in quickstart
-    assert "Admin SPA" in quickstart  # how to get a JHE token
+    assert "TRUSTED_TOKEN_ISSUERS" in quickstart  # how JHE trusts the EHR issuer
+    assert "token-exchange" in quickstart  # the id_token exchange (RFC 8693)
     assert "smart-on-fhir/launch" in quickstart  # how to simulate a launch
     assert "MedPlum" in quickstart
     assert "Troubleshooting" in quickstart

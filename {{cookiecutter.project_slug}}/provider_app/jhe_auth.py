@@ -6,8 +6,6 @@ second OAuth login. JHE must be configured to trust the EHR issuer (its
 TRUSTED_TOKEN_IDP) and have the launching Practitioner on file keyed by the
 issuer's identifier. The SMART launch must request the 'openid fhirUser' scopes
 so that the EHR issues an id_token.
-
-A static $JHE_TOKEN, when set, is used instead as a dev/test shortcut.
 """
 from __future__ import annotations
 
@@ -66,10 +64,8 @@ def exchange_token(context: LaunchContext, jhe_url: Optional[str] = None) -> str
 def client_for_launch(context: LaunchContext, jhe_url: Optional[str] = None) -> JupyterHealthClient:
     """Return a JupyterHealthClient for this launch.
 
-    Uses a static $JHE_TOKEN when set (dev/test shortcut); otherwise mints a JHE
-    token from the SMART launch via token exchange.
+    The JHE token is always minted from the SMART launch by exchanging the EHR
+    id_token (RFC 8693) — there is no static-token shortcut.
     """
     url = _jhe_url(jhe_url)
-    if os.environ.get("JHE_TOKEN"):
-        return JupyterHealthClient(url=url)
     return JupyterHealthClient(url=url, token=exchange_token(context, url))

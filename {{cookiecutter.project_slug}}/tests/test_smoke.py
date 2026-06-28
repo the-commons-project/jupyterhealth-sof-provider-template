@@ -18,7 +18,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 def test_notebook_code_executes(tmp_path, monkeypatch):
     import sys
     sys.path.insert(0, str(PROJECT_ROOT))
-    from provider_app import launch_context, jhe_data
+    from provider_app import launch_context, jhe_auth, jhe_data
 
     # Fake SMART token file + env
     token_file = tmp_path / "smart_token.json"
@@ -29,10 +29,10 @@ def test_notebook_code_executes(tmp_path, monkeypatch):
     }))
     monkeypatch.setenv("SMART_TOKEN_FILE", str(token_file))
     monkeypatch.setenv("MRN_IDENTIFIER_SYSTEM", "urn:mrn")
-    # Static $JHE_TOKEN takes the dev/test shortcut in jhe_auth.client_for_launch,
-    # so the smoke test skips real token exchange.
     monkeypatch.setenv("JHE_URL", "https://jhe.test")
-    monkeypatch.setenv("JHE_TOKEN", "TEST-JHE-TOKEN")
+    # Mock the JHE token exchange so jhe_auth.client_for_launch runs its real code
+    # path (there's no static-token shortcut) without hitting a live JHE.
+    monkeypatch.setattr(jhe_auth, "exchange_token", lambda ctx, *a, **k: "TEST-JHE-TOKEN")
 
     # Fake the EHR Patient fetch so the REAL launch_context.current() runs
     # (token read + MRN extraction). current() resolves requests.get at call
@@ -46,8 +46,10 @@ def test_notebook_code_executes(tmp_path, monkeypatch):
 
     monkeypatch.setattr(launch_context.requests, "get", lambda url, headers=None: _Resp())
 
-    # Fake JHE data
-    def _fake_fetch(mrn, types, client=None, start=None, end=None):
+    # Fake JHE data. fetch() now takes the LaunchContext (and runs the identity
+    # guard internally); we stub the whole thing so the smoke test stays focused on
+    # the notebook wiring rather than the EHR/JHE identity round-trip.
+    def _fake_fetch(ctx, types, client=None, start=None, end=None):
         return {
             t: pd.DataFrame({
                 "effective_time_frame_date_time": pd.to_datetime(["2026-06-01T00:00:00Z"], utc=True),
