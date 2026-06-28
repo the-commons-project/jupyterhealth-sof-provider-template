@@ -54,7 +54,7 @@ or `cp examples/cgm-dashboard.ipynb dashboard.ipynb` for the CGM showcase.
   data with the token it mints at launch — no separate JHE token). See `docs/QUICKSTART.md`.
 
 > The app mints its JHE token at launch by exchanging the EHR id_token (RFC 8693), so
-> there is normally nothing to paste for auth. `JHE_TOKEN` is an optional dev-only shortcut.
+> there is no JHE token to paste — auth is entirely the SMART launch.
 
 ## Where to start
 - **`docs/QUICKSTART.md`** — **start here.** End-to-end: configure the id_token exchange,
@@ -64,6 +64,17 @@ or `cp examples/cgm-dashboard.ipynb dashboard.ipynb` for the CGM showcase.
 - **`provider_app/`** — launch context, MRN→JHE resolution, identity guard, and data fetch.
 - **`docs/deployment.md`** — configure, run, deploy, and the iframe/CSP gotcha.
 - **`docs/ehr-registration.md`** — register the app with your EHR and start security review.
+
+## Examples
+
+`examples/` holds drop-in replacements for the root `dashboard.ipynb` — copy one over
+to start from a richer notebook instead of the generic scaffold. See
+[`examples/README.md`](examples/README.md) for details and reproducible demo values.
+
+- **`cgm-dashboard.ipynb`** — a Continuous Glucose Monitoring report (AGP percentile chart,
+  glycemic metrics, Time-in-Range) plus an interactive multi-signal showcase (glucose
+  overlaid with sleep, activity, and overnight vitals). Use it with
+  `cp examples/cgm-dashboard.ipynb dashboard.ipynb`.
 
 ## Develop
 ```
