@@ -4,6 +4,10 @@ Proves launch_context -> jhe_auth -> jhe_data.fetch -> notebook viz wire togethe
 real EHR or JHE. Executes the notebook's code cells in-process with fakes injected
 (a real kernel would not see in-process monkeypatches). Run from the project root:
 `pytest tests/test_smoke.py`.
+
+Asserts the DEFAULT scaffold's contract (a `data` dict containing `heart_rate`). If you
+replace dashboard.ipynb — e.g. `cp examples/cgm-dashboard.ipynb dashboard.ipynb` — or
+change the scaffold cell, adapt these assertions or skip this test.
 """
 import json
 from pathlib import Path
