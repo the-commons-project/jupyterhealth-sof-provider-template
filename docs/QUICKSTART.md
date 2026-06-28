@@ -15,7 +15,9 @@ There are two test paths for the SMART launch:
 
 ## 0. Prerequisites
 
-- Python 3.11+ and Docker (with `docker compose`).
+- Python 3.11+ and Docker (with `docker compose`). For local (non-Docker) installs, use a
+  virtualenv — `python3 -m venv .venv && source .venv/bin/activate` — since macOS/Homebrew
+  Python rejects `pip install` outside one (PEP 668).
 - Access to a **JupyterHealth Exchange (JHE) instance** — your own deployment, a shared
   `*.fly.dev` instance, or a local JHE (see
   [jupyterhealth-exchange](https://github.com/jupyterhealth/jupyterhealth-exchange)).
@@ -123,6 +125,7 @@ marked `ADD YOUR ANALYTICS + VISUALIZATION`.
 
 Inner loop (faster than rebuilding the container each time):
 ```
+python3 -m venv .venv && source .venv/bin/activate   # macOS/Homebrew: required (PEP 668)
 pip install -e ".[test]"
 jupyter lab            # open dashboard.ipynb, iterate on the viz cell
 ```
