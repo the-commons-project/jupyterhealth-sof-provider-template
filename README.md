@@ -65,6 +65,17 @@ or `cp examples/cgm-dashboard.ipynb dashboard.ipynb` for the CGM showcase.
 - **`docs/deployment.md`** — configure, run, deploy, and the iframe/CSP gotcha.
 - **`docs/ehr-registration.md`** — register the app with your EHR and start security review.
 
+## Examples
+
+`examples/` holds drop-in replacements for the root `dashboard.ipynb` — copy one over
+to start from a richer notebook instead of the generic scaffold. See
+[`examples/README.md`](examples/README.md) for details and reproducible demo values.
+
+- **`cgm-dashboard.ipynb`** — a Continuous Glucose Monitoring report (AGP percentile chart,
+  glycemic metrics, Time-in-Range) plus an interactive multi-signal showcase (glucose
+  overlaid with sleep, activity, and overnight vitals). Use it with
+  `cp examples/cgm-dashboard.ipynb dashboard.ipynb`.
+
 ## Develop
 ```
 pip install -e ".[test]"
