@@ -1,17 +1,16 @@
 # Deploying this app
 
 > **New here?** Start with [QUICKSTART.md](QUICKSTART.md) — it walks the full path from a
-> generated project to data on screen (how to get a `JHE_TOKEN`, how to simulate a SMART
-> launch). This file is the deployment-specific reference.
+> generated project to data on screen (how to configure the id_token exchange, how to
+> simulate a SMART launch). This file is the deployment-specific reference.
 
 ## Configure
 Generation created `.env` from your answers (gitignored; there is no `.env.example`).
 The app loads `.env` at runtime — edit it and the change takes effect on the next run.
 Values:
-- `JHE_URL` — your JupyterHealth Exchange base URL (e.g. `https://jhe.fly.dev`)
-- `JHE_TOKEN` — a JHE bearer token authorized to read your patients. Obtain it by
-  registering this app as an **OAuth2 Client in the JHE Admin SPA** (your JHE instance's
-  `/portal`) and completing JHE's OAuth flow — see [QUICKSTART.md](QUICKSTART.md) §1.
+- `JHE_URL` — your JupyterHealth Exchange base URL (e.g. `https://jhe.fly.dev`). The app
+  mints its JHE bearer token at launch by exchanging the EHR id_token (RFC 8693); JHE must
+  be configured to trust the EHR issuer — see [QUICKSTART.md](QUICKSTART.md) §1.
 - `SMART_CLIENT_ID` — the SMART `client_id` from your EHR app registration (public
   client + PKCE; no secret).
 - `SMART_SCOPES` — SMART scopes requested at launch (space-separated).
