@@ -53,7 +53,7 @@ class FakeClient:
         return {"id": patient_id, "nameFamily": self._name_family, "birthDate": self._birth_date}
 
     def list_observations_df(self, patient_id=None, code=None, limit=2000):
-        self.calls.append((patient_id, code))
+        self.calls.append((patient_id, code, limit))
         return pd.DataFrame(
             {
                 "effective_time_frame_date_time": pd.to_datetime(
@@ -138,3 +138,39 @@ def test_data_type_codes_env_override(monkeypatch):
 def test_unknown_data_type_raises():
     with pytest.raises(jhe_data.UnknownDataType):
         jhe_data.code_for("blood_pressure_made_up")
+
+
+def test_fetch_uses_one_unfiltered_high_limit_call(monkeypatch):
+    # Robustness: a single fetch with NO server-side code= filter (which silently
+    # drops IEEE-namespaced codes) and a limit well above the API's 2000-row default.
+    monkeypatch.setattr(identity.requests, "get", _ehr_get())
+    client = FakeClient()
+    jhe_data.fetch(_context(), types=["heart_rate"], client=client)
+    assert len(client.calls) == 1
+    _patient_id, code, limit = client.calls[0]
+    assert code is None
+    assert limit >= 100_000
+
+
+def test_fetch_returns_ieee_coded_rows_server_filtering_would_drop(monkeypatch):
+    # `sleep` maps to an IEEE-namespaced code; server-side code= filtering returns
+    # nothing for it, so this proves the client-side split surfaces the row.
+    monkeypatch.setattr(identity.requests, "get", _ehr_get())
+    sleep_code = jhe_data._code_string(jhe_data.code_for("sleep"))
+
+    class MixedClient(FakeClient):
+        def list_observations_df(self, patient_id=None, code=None, limit=2000):
+            self.calls.append((patient_id, code, limit))
+            return pd.DataFrame(
+                {
+                    "code_coding_0_code": [sleep_code, "omh:heart-rate:2.0"],
+                    "effective_time_frame_date_time": pd.to_datetime(
+                        ["2026-06-01T00:00:00Z", "2026-06-02T00:00:00Z"], utc=True
+                    ),
+                }
+            )
+
+    client = MixedClient()
+    result = jhe_data.fetch(_context(), types=["sleep"], client=client)
+    assert len(result["sleep"]) == 1            # the IEEE-coded sleep row, split client-side
+    assert client.calls[0][1] is None           # fetched unfiltered

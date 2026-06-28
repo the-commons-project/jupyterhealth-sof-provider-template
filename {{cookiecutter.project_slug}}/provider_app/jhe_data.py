@@ -15,8 +15,9 @@ from jupyterhealth_client import Code, JupyterHealthClient
 from . import identity, patient_resolver
 
 # Friendly data-type name -> JHE code. Code enum members where available;
-# string OMH codes otherwise. `steps` is provisional — confirm against the
-# active ingestion path (Garmin shim / Validic). Override via JHE_DATA_TYPE_CODES.
+# string OMH/IEEE codes otherwise. These must match the code the patient's data
+# was actually ingested under — confirm against your ingestion path (Garmin shim /
+# Validic / synthea) and override via JHE_DATA_TYPE_CODES.
 _DEFAULT_DATA_TYPE_CODES: dict[str, object] = {
     "heart_rate": Code.HEART_RATE,
     "sleep": Code.SLEEP_STAGE_SUMMARY,
@@ -24,6 +25,13 @@ _DEFAULT_DATA_TYPE_CODES: dict[str, object] = {
 }
 
 _TIME_COLUMN = "effective_time_frame_date_time"
+
+# High enough to never hit the JHE API's default 2000-row page cap on a single
+# unfiltered fetch (see fetch() for why we fetch unfiltered).
+_OBSERVATION_FETCH_LIMIT = 100_000
+
+# The flattened observations frame names the code column one of these.
+_CODE_COLUMNS = ("code_coding_0_code", "code")
 
 
 class UnknownDataType(Exception):
@@ -46,6 +54,12 @@ def code_for(data_type: str) -> object:
             f"Add it via JHE_DATA_TYPE_CODES."
         )
     return codes[data_type]
+
+
+def _code_string(code: object) -> str:
+    """Normalize a configured code (a `Code` enum member or a raw string) to its
+    OMH/IEEE code string, e.g. Code.HEART_RATE -> 'omh:heart-rate:2.0'."""
+    return str(getattr(code, "value", code))
 
 
 def _filter_dates(df: pd.DataFrame, start: Optional[str], end: Optional[str]) -> pd.DataFrame:
@@ -85,8 +99,23 @@ def fetch(
     jhe_patient = client.get_patient(patient_id)
     identity.assert_same_patient(ctx, jhe_patient)  # raises IdentityMismatch / IdentityUnverified
 
+    # Fetch the patient's observations ONCE, unfiltered, then split by code in pandas.
+    # Why not let the server filter per type with `code=`:
+    #   1. The JHE API silently returns NOTHING for IEEE-namespaced codes (e.g.
+    #      ieee:physical-activity:1.0, ieee:sleep-stage-summary:1.0) — activity/sleep
+    #      data disappears with no error.
+    #   2. Each per-type call also risks the API's default 2000-row truncation.
+    # A single high-limit unfiltered call + client-side split is robust to both. The
+    # resulting per-type frame is identical to a (working) server-filtered fetch.
+    all_obs = client.list_observations_df(patient_id=patient_id, limit=_OBSERVATION_FETCH_LIMIT)
+    code_col = next((c for c in _CODE_COLUMNS if c in all_obs.columns), None)
+
     out: dict[str, pd.DataFrame] = {}
     for data_type in types:
-        df = client.list_observations_df(patient_id=patient_id, code=code_for(data_type))
+        wanted = _code_string(code_for(data_type))
+        if all_obs.empty or code_col is None:
+            df = all_obs.copy()  # nothing to split on; pass through (e.g. empty result)
+        else:
+            df = all_obs[all_obs[code_col].astype(str) == wanted].dropna(axis=1, how="all").copy()
         out[data_type] = _filter_dates(df, start, end)
     return out
