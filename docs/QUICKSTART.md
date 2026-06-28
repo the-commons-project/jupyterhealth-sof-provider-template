@@ -75,7 +75,8 @@ effect on the next run. Set:
 - `SMART_CLIENT_ID` — the `client_id` from your EHR app registration (public client +
   PKCE; no secret); a placeholder works until you register, then paste the real value
 - `SMART_SCOPES` — SMART scopes for the launch (the default is usually fine)
-- `EHR_IFRAME_ORIGIN` — the EHR origin allowed to embed the app (CSP)
+- `EHR_IFRAME_ORIGIN` — only for EHRs that iframe-embed the app (e.g. Epic); redirect
+  launches like Medplum ignore it, so the default is fine
 - `MRN_IDENTIFIER_SYSTEM` — the EHR `Patient.identifier` system that holds the MRN
   (see [ehr-registration.md](ehr-registration.md) §3 for how to find it; MedPlum has
   its own identifier system)
@@ -155,7 +156,7 @@ pytest tests/test_smoke.py
 
 | Symptom | Likely cause | Fix |
 | --- | --- | --- |
-| Blank frame in the EHR | CSP `frame-ancestors` blocks embedding | See deployment.md → "iframe/CSP gotcha"; confirm your EHR origin is in the CSP header |
+| Blank frame in an **iframe-embedding** EHR (e.g. Epic) | CSP `frame-ancestors` blocks the embed (N/A to redirect launches like Medplum) | Set `EHR_IFRAME_ORIGIN` to the EHR origin; see deployment.md → "iframe/CSP gotcha" |
 | `LaunchContextError: SMART_TOKEN_FILE is not set` | App opened without a SMART launch | Launch it from the EHR (step 4), not directly |
 | `LaunchContextError: No identifier with system ... found` | `MRN_IDENTIFIER_SYSTEM` doesn't match the EHR's MRN system | Inspect the EHR `Patient.identifier` and set the correct system |
 | `PatientNotInJHE: No JupyterHealth patient found for MRN ...` | JHE has no patient whose external id == that MRN | Add/align the patient's external identifier in JHE |
