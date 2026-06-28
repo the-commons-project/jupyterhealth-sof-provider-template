@@ -40,6 +40,10 @@ still gets the report, with the showcase quietly noting the absent signals.
    cell (comment the launch lines, hardcode `patient_id = 40006`; needs `$JHE_URL` and a
    JHE client/token you supply in the notebook for local-only iteration).
 
+> Once you copy this over `dashboard.ipynb`, `tests/test_smoke.py` will fail — it asserts
+> the default scaffold's `data`/`heart_rate` contract, which this notebook doesn't use.
+> That's expected; adapt or skip that test for your customized dashboard.
+
 ### Auth model
 
 There is **no separate JHE login**: the provider logs into the **EHR** (Medplum) during the
