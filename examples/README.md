@@ -40,6 +40,10 @@ still gets the report, with the showcase quietly noting the absent signals.
    cell (comment the launch lines, hardcode `patient_id = 40006`; needs `$JHE_URL` and a
    JHE client/token you supply in the notebook for local-only iteration).
 
+> Once you copy this over `dashboard.ipynb`, `tests/test_smoke.py` will fail — it asserts
+> the default scaffold's `data`/`heart_rate` contract, which this notebook doesn't use.
+> That's expected; adapt or skip that test for your customized dashboard.
+
 ### Auth model
 
 There is **no separate JHE login**: the provider logs into the **EHR** (Medplum) during the
@@ -80,7 +84,7 @@ The app mints its JHE token at launch via the id_token exchange, so there is no 
 ```
 JHE_URL=https://jhe.fly.dev
 SMART_CLIENT_ID=<your Medplum SMART client_id>
-EHR_IFRAME_ORIGIN=https://app.medplum.com            # CSP frame-ancestors
+EHR_IFRAME_ORIGIN=https://app.medplum.com            # unused by Medplum (redirect launch); only iframe EHRs need it
 MRN_IDENTIFIER_SYSTEM=<same system as the Medplum patient identifier>
 ```
 

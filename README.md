@@ -1,8 +1,8 @@
 # JupyterHealth SoF Provider App
 
 A SMART on FHIR **provider-launch** application backed by the JupyterHealth Exchange
-(JHE). It embeds in an EHR iframe, resolves the launched patient to a JHE record **by
-MRN**, fetches their device data, and renders it via a Voilà-served Jupyter notebook.
+(JHE). Launched from an EHR via SMART on FHIR, it resolves the launched patient to a JHE
+record **by MRN**, fetches their device data, and renders it via a Voilà-served Jupyter notebook.
 You add analytics/viz by editing one notebook cell.
 
 This is a **template repository** — you run it in place; there is no generation step.
@@ -20,10 +20,15 @@ Pick one:
 Then configure and run:
 
 ```
+python3 -m venv .venv && source .venv/bin/activate   # isolate deps (avoids system-Python errors)
 cp .env.example .env     # then fill in the 5 values below — or: make init (interactive)
-pip install -e .         # or: docker compose up --build
+pip install -e .         # or skip the venv + install and use: docker compose up --build
 make run                 # serve the dashboard with Voilà (or: docker compose up --build)
 ```
+
+> macOS/Homebrew Python is "externally managed" and `pip install` fails (PEP 668) unless you
+> install into a virtualenv — hence the `python3 -m venv` step above. Keep it activated for
+> `pip`, `make`, and `pytest`. Docker (`docker compose up --build`) needs no venv.
 
 The importable package stays `provider_app` and the served notebook is always
 `dashboard.ipynb` — you don't rename anything. Customize by editing `dashboard.ipynb`,
@@ -35,9 +40,10 @@ or `cp examples/cgm-dashboard.ipynb dashboard.ipynb` for the CGM showcase.
 `.env.example` ships placeholder values — never commit real values to it.
 
 **From your EHR (Epic, Medplum, …) — where the app launches:**
-- `EHR_IFRAME_ORIGIN` — the EHR's **web origin** that embeds the app in an iframe (e.g.
-  `https://app.medplum.com`), needed for the CSP. A blank frame in the EHR almost always
-  means this is wrong — see `docs/deployment.md`.
+- `EHR_IFRAME_ORIGIN` — only needed if your EHR **embeds the app in an iframe** (e.g. Epic).
+  Redirect-style launches like **Medplum** render the app as a top-level page and ignore it,
+  so the default is fine. When it does apply, set it to that EHR's web origin for the CSP — a
+  blank frame usually means it's wrong; see `docs/deployment.md`.
 - `SMART_CLIENT_ID` — the **`client_id`** from registering this app as a SMART app at your
   EHR (public client + PKCE; no secret). You can register *after* cloning and paste the
   real value later — a placeholder works until then.
@@ -78,7 +84,8 @@ to start from a richer notebook instead of the generic scaffold. See
 
 ## Develop
 ```
-pip install -e ".[test]"
+python3 -m venv .venv && source .venv/bin/activate   # if you haven't already
+pip install -e ".[test]"       # editable install + test deps (pytest, nbformat)
 docker compose up --build      # run; complete a SMART launch from your EHR / MedPlum
 pytest                         # unit tests + an end-to-end smoke test against fakes
 ```
