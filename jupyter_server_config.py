@@ -1,4 +1,4 @@
-# Jupyter server configuration for the generated SoF provider app.
+# Jupyter server configuration for the SoF provider app.
 # Loads the SMART-on-FHIR launch extension and Voilà in one server.
 import os
 
@@ -15,10 +15,10 @@ c.ServerApp.jpserver_extensions = {  # noqa: F821
 
 # --- SMART on FHIR launch (jupyter-smart-on-fhir) ---
 # client_id comes from .env (SMART_CLIENT_ID) so you can paste the real value from your
-# EHR app registration without editing this file; the cookiecutter answer is the default.
+# EHR app registration without editing this file; the fallback is a neutral placeholder.
 # Public client + PKCE — no client secret is used.
-c.SMARTExtensionApp.client_id = os.environ.get("SMART_CLIENT_ID", "{{ cookiecutter.client_id }}")  # noqa: F821
-c.SMARTExtensionApp.scopes = os.environ.get("SMART_SCOPES", "{{ cookiecutter.smart_scopes }}").split()  # noqa: F821
+c.SMARTExtensionApp.client_id = os.environ.get("SMART_CLIENT_ID", "00000000-0000-0000-0000-000000000000")  # noqa: F821
+c.SMARTExtensionApp.scopes = os.environ.get("SMART_SCOPES", "openid fhirUser launch patient/*.read").split()  # noqa: F821
 
 # --- Authentication ---
 # The SMART launch + OAuth IS the auth layer for this app. jupyter-smart-on-fhir's
@@ -43,6 +43,6 @@ c.ServerApp.default_url = "/voila/render/dashboard.ipynb"  # noqa: F821
 # Allow the configured EHR origin. Add more origins as space-separated values.
 c.ServerApp.tornado_settings = {  # noqa: F821
     "headers": {
-        "Content-Security-Policy": "frame-ancestors 'self' " + os.environ.get("EHR_IFRAME_ORIGIN", "{{ cookiecutter.ehr_iframe_origin }}")
+        "Content-Security-Policy": "frame-ancestors 'self' " + os.environ.get("EHR_IFRAME_ORIGIN", "https://app.medplum.com")
     }
 }

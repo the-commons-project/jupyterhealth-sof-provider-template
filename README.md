@@ -1,61 +1,79 @@
-# jupyterhealth-sof-provider-template
+# JupyterHealth SoF Provider App
 
-Cookiecutter template that scaffolds a SMART on FHIR **provider-launch** application
-backed by the JupyterHealth Exchange (JHE). The generated app embeds in an EHR iframe,
-resolves the launched patient to a JHE record **by MRN**, fetches their device data,
-and renders it via a Voilà-served Jupyter notebook. You add analytics/viz by editing
-one notebook cell.
+A SMART on FHIR **provider-launch** application backed by the JupyterHealth Exchange
+(JHE). It embeds in an EHR iframe, resolves the launched patient to a JHE record **by
+MRN**, fetches their device data, and renders it via a Voilà-served Jupyter notebook.
+You add analytics/viz by editing one notebook cell.
 
-## Before you generate — have these ready
+This is a **template repository** — you run it in place; there is no generation step.
 
-Generating takes a minute; the values it prompts for come from two systems you set up
-first. Gather these so the answers are obvious:
+## Start a new project from this template
+
+Pick one:
+
+- **GitHub (easiest):** click **Use this template → Create a new repository** — you get a
+  fresh repo (new history) with all files copied into your account.
+- **CLI:** `gh repo create my-org/acme-provider-app --template the-commons-project/jupyterhealth-sof-provider-template --private`
+- **Local, no GitHub repo:** `npx degit the-commons-project/jupyterhealth-sof-provider-template acme-provider-app`
+- **Or just** `git clone` this repo.
+
+Then configure and run:
+
+```
+cp .env.example .env     # then fill in the 5 values below — or: make init (interactive)
+pip install -e .         # or: docker compose up --build
+make run                 # serve the dashboard with Voilà (or: docker compose up --build)
+```
+
+The importable package stays `provider_app` and the served notebook is always
+`dashboard.ipynb` — you don't rename anything. Customize by editing `dashboard.ipynb`,
+or `cp examples/cgm-dashboard.ipynb dashboard.ipynb` for the CGM showcase.
+
+## Configure `.env` — what each value is and where it comes from
+
+`.env` is gitignored; the app reads it at runtime, so edits take effect on the next run.
+`.env.example` ships placeholder values — never commit real values to it.
 
 **From your EHR (Epic, Medplum, …) — where the app launches:**
-- The EHR's **web origin** that will embed the app in an iframe (e.g. `https://app.medplum.com`) — needed for the CSP.
-- A registered **SMART app** there, which gives you a **`client_id`**. You can register
-  *after* generating and paste the real `client_id` into `.env` (`SMART_CLIENT_ID`) — a
-  placeholder works at generation time.
-- A choice of which **`Patient.identifier` system** holds the MRN. You'll set this same
-  system + value on your test patient in the EHR.
+- `EHR_IFRAME_ORIGIN` — the EHR's **web origin** that embeds the app in an iframe (e.g.
+  `https://app.medplum.com`), needed for the CSP. A blank frame in the EHR almost always
+  means this is wrong — see `docs/deployment.md`.
+- `SMART_CLIENT_ID` — the **`client_id`** from registering this app as a SMART app at your
+  EHR (public client + PKCE; no secret). You can register *after* cloning and paste the
+  real value later — a placeholder works until then.
+- `MRN_IDENTIFIER_SYSTEM` — which **`Patient.identifier` system** holds the MRN. Set this
+  same system + value on your test patient in the EHR. See `docs/ehr-registration.md` §3.
+- `SMART_SCOPES` — the SMART scopes to request at launch (the default is usually fine).
 
 **From your JupyterHealth Exchange (JHE) instance — where the data lives:**
-- Its **base URL** (e.g. `https://jhe.fly.dev`).
-- A **patient with data**, and that patient's **external identifier** (the MRN). The EHR
-  patient's identifier *value* must equal this — it's the join key between the two systems.
+- `JHE_URL` — its **base URL** (e.g. `https://jhe.fly.dev`). Must exactly match the JHE
+  instance's `SITE_URL` (the token-exchange audience check is an exact-match).
+- A **patient with data** whose **external identifier** (the MRN) equals the EHR patient's
+  identifier *value* — that equality is the join key between the two systems.
 - JHE configured to **trust your EHR** so it accepts the id_token exchange (the app reads
-  data with the token it mints at launch — no separate JHE token). See the generated
-  `docs/QUICKSTART.md`.
+  data with the token it mints at launch — no separate JHE token). See `docs/QUICKSTART.md`.
 
-**On your machine:** Python 3.11+, `cookiecutter`, and (optionally) Docker.
+> The app mints its JHE token at launch by exchanging the EHR id_token (RFC 8693), so
+> there is normally nothing to paste for auth. `JHE_TOKEN` is an optional dev-only shortcut.
 
-## Generate a project
-
-    pip install cookiecutter
-    # from a local checkout (current):
-    cookiecutter /path/to/jupyterhealth-sof-provider-template
-    # or, once published to the jupyterhealth org (public):
-    cookiecutter gh:jupyterhealth/jupyterhealth-sof-provider-template
-
-You'll be prompted for: project name, SMART `client_id`, JHE base URL, SMART scopes,
-the EHR iframe origin (for CSP), and the MRN identifier system. Each prompt shows a
-one-line description of what to enter. The generator then writes a ready-to-edit `.env`
-from your answers (no `.env.example` — see below); the app mints its JHE token at launch
-via the id_token exchange, so there's nothing to paste in.
-
-## What you get
-- `dashboard.ipynb` — **edit the marked cell** to add your analytics/visualization.
-- `provider_app/` — launch context, MRN→JHE resolution, and data fetch (don't need to touch).
-- `jupyter_server_config.py` — SMART + Voilà + CSP, pre-filled from your answers.
-- `Dockerfile`, `docker-compose.yml`, `fly.toml.example` — deploy.
-- `docs/QUICKSTART.md` — end-to-end walkthrough (configure the id_token exchange, simulate a launch, see data).
-- `docs/ehr-registration.md`, `docs/deployment.md` — register and ship it.
+## Where to start
+- **`docs/QUICKSTART.md`** — **start here.** End-to-end: configure the id_token exchange,
+  simulate a SMART launch (MedPlum or fully local), and see data on screen.
+- **`dashboard.ipynb`** — edit the cell marked `ADD YOUR ANALYTICS + VISUALIZATION`. The
+  cells above it (launch context + data fetch) are scaffolded; you normally don't touch them.
+- **`provider_app/`** — launch context, MRN→JHE resolution, identity guard, and data fetch.
+- **`docs/deployment.md`** — configure, run, deploy, and the iframe/CSP gotcha.
+- **`docs/ehr-registration.md`** — register the app with your EHR and start security review.
 
 ## Develop
-    cd <your-project>
-    pip install -e ".[test]"
-    docker compose up --build      # run; complete a SMART launch from your EHR/MedPlum
-    pytest tests/test_smoke.py     # end-to-end smoke against fakes
+```
+pip install -e ".[test]"
+docker compose up --build      # run; complete a SMART launch from your EHR / MedPlum
+pytest                         # unit tests + an end-to-end smoke test against fakes
+```
+All config is read from `.env` at runtime, so edits take effect on the next run — no code
+changes. In Jupyter Lab the launch context isn't present, so `launch_context.current()`
+will raise; iterate on visuals with the smoke-test fakes pattern (see `tests/test_smoke.py`).
 
 ## Built on
 - [`jupyter-smart-on-fhir`](https://github.com/jupyterhealth/jupyter-smart-on-fhir) (SMART launch)
@@ -63,6 +81,6 @@ via the id_token exchange, so there's nothing to paste in.
 - [Voilà](https://voila.readthedocs.io/) (notebook → web app)
 
 ## Scope
-Generic infrastructure (a POC scaffold). You own clinical analytics, EHR registration,
-security review, production deployment, and concurrent-provider hardening. See the
-generated `docs/`.
+Generic infrastructure (a POC scaffold). It targets **one provider session at a time** —
+see the concurrency note in `docs/deployment.md`. You own clinical analytics, EHR
+registration, security review, production deployment, and concurrent-provider hardening.

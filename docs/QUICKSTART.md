@@ -1,6 +1,6 @@
 # Quickstart
 
-This walks you from a freshly generated project to seeing a patient's device data
+This walks you from a fresh clone of this template to seeing a patient's device data
 rendered by a SMART on FHIR launch — end to end. Plan ~1–2 hours the first time.
 
 There are two test paths for the SMART launch:
@@ -63,17 +63,17 @@ token to create or manage. Three things must be in place
 
 ## 2. Configure
 
-Generation already created `.env` from your answers (it's gitignored — there is no
-`.env.example`). The app loads `.env` at runtime, so edits take effect on the next run.
-Open `.env` and set:
-- `JHE_URL` — from step 1 (e.g. `https://jhe.fly.dev`); pre-filled from your answer.
+Copy `.env.example` to `.env` (gitignored) and fill it in — `cp .env.example .env`, or
+run `make init` for an interactive prompt. The app loads `.env` at runtime, so edits take
+effect on the next run. Set:
+- `JHE_URL` — from step 1 (e.g. `https://jhe.fly.dev`).
   **Must exactly match the JHE instance's `SITE_URL`** (same scheme and host, no trailing-slash
   difference) — the token-exchange `audience` check is an exact string comparison, so any
   mismatch causes every exchange to fail with HTTP 400.
 - `SMART_CLIENT_ID` — the `client_id` from your EHR app registration (public client +
-  PKCE; no secret); pre-filled, override here after registering
-- `SMART_SCOPES` — SMART scopes for the launch; pre-filled
-- `EHR_IFRAME_ORIGIN` — the EHR origin allowed to embed the app (CSP); pre-filled
+  PKCE; no secret); a placeholder works until you register, then paste the real value
+- `SMART_SCOPES` — SMART scopes for the launch (the default is usually fine)
+- `EHR_IFRAME_ORIGIN` — the EHR origin allowed to embed the app (CSP)
 - `MRN_IDENTIFIER_SYSTEM` — the EHR `Patient.identifier` system that holds the MRN
   (see [ehr-registration.md](ehr-registration.md) §3 for how to find it; MedPlum has
   its own identifier system)
