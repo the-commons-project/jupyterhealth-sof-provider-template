@@ -54,7 +54,7 @@ or `cp examples/cgm-dashboard.ipynb dashboard.ipynb` for the CGM showcase.
   data with the token it mints at launch — no separate JHE token). See `docs/QUICKSTART.md`.
 
 > The app mints its JHE token at launch by exchanging the EHR id_token (RFC 8693), so
-> there is normally nothing to paste for auth. `JHE_TOKEN` is an optional dev-only shortcut.
+> there is no JHE token to paste — auth is entirely the SMART launch.
 
 ## Where to start
 - **`docs/QUICKSTART.md`** — **start here.** End-to-end: configure the id_token exchange,
