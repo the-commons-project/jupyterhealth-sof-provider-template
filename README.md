@@ -35,9 +35,10 @@ or `cp examples/cgm-dashboard.ipynb dashboard.ipynb` for the CGM showcase.
 `.env.example` ships placeholder values — never commit real values to it.
 
 **From your EHR (Epic, Medplum, …) — where the app launches:**
-- `EHR_IFRAME_ORIGIN` — the EHR's **web origin** that embeds the app in an iframe (e.g.
-  `https://app.medplum.com`), needed for the CSP. A blank frame in the EHR almost always
-  means this is wrong — see `docs/deployment.md`.
+- `EHR_IFRAME_ORIGIN` — only needed if your EHR **embeds the app in an iframe** (e.g. Epic).
+  Redirect-style launches like **Medplum** render the app as a top-level page and ignore it,
+  so the default is fine. When it does apply, set it to that EHR's web origin for the CSP — a
+  blank frame usually means it's wrong; see `docs/deployment.md`.
 - `SMART_CLIENT_ID` — the **`client_id`** from registering this app as a SMART app at your
   EHR (public client + PKCE; no secret). You can register *after* cloning and paste the
   real value later — a placeholder works until then.
