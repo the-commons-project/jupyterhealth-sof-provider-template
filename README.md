@@ -20,10 +20,15 @@ Pick one:
 Then configure and run:
 
 ```
+python3 -m venv .venv && source .venv/bin/activate   # isolate deps (avoids system-Python errors)
 cp .env.example .env     # then fill in the 5 values below — or: make init (interactive)
-pip install -e .         # or: docker compose up --build
+pip install -e .         # or skip the venv + install and use: docker compose up --build
 make run                 # serve the dashboard with Voilà (or: docker compose up --build)
 ```
+
+> macOS/Homebrew Python is "externally managed" and `pip install` fails (PEP 668) unless you
+> install into a virtualenv — hence the `python3 -m venv` step above. Keep it activated for
+> `pip`, `make`, and `pytest`. Docker (`docker compose up --build`) needs no venv.
 
 The importable package stays `provider_app` and the served notebook is always
 `dashboard.ipynb` — you don't rename anything. Customize by editing `dashboard.ipynb`,
@@ -78,7 +83,8 @@ to start from a richer notebook instead of the generic scaffold. See
 
 ## Develop
 ```
-pip install -e ".[test]"
+python3 -m venv .venv && source .venv/bin/activate   # if you haven't already
+pip install -e ".[test]"       # editable install + test deps (pytest, nbformat)
 docker compose up --build      # run; complete a SMART launch from your EHR / MedPlum
 pytest                         # unit tests + an end-to-end smoke test against fakes
 ```
